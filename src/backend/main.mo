@@ -1,4 +1,4 @@
-import Migration "migration";
+
 import Map "mo:core/Map";
 import Text "mo:core/Text";
 import Nat "mo:core/Nat";
@@ -12,7 +12,7 @@ import Principal "mo:core/Principal";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 
-(with migration = Migration.run)
+
 actor {
   // Authorization
   let accessControlState = AccessControl.initState();
@@ -94,7 +94,7 @@ actor {
   var nextId = 22;
   var nextOrderId = 1;
   var razorpayKeyId : ?Text = null;
-  var upiId : ?Text = null;
+  var upiId : ?Text = ?"8961492669@jio";
 
   let flavors = Map.empty<Nat, IceCreamFlavor>();
   let contactMessages = List.empty<ContactMessage>();

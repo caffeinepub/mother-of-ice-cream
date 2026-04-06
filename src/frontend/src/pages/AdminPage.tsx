@@ -453,7 +453,7 @@ function SettingsTab() {
                 id="upi-id"
                 value={upiInput}
                 onChange={(e) => setUpiInput(e.target.value)}
-                placeholder="9007819261@ybl or yourname@oksbi"
+                placeholder="8961492669@jio or yourname@oksbi"
                 className="rounded-xl border-2 font-mono text-sm focus-visible:ring-primary"
                 autoComplete="off"
                 data-ocid="admin.settings.input"
