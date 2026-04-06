@@ -373,3 +373,17 @@ export function useSetUpiId() {
     },
   });
 }
+
+export function useSeedDefaultFlavors() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error("Not connected");
+      return actor.seedDefaultFlavors();
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["flavors"] });
+    },
+  });
+}

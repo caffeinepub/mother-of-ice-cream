@@ -41,6 +41,7 @@ import {
   useGetOrders,
   useGetRazorpayKey,
   useGetUpiId,
+  useSeedDefaultFlavors,
   useSetRazorpayKey,
   useSetUpiId,
   useToggleAvailability,
@@ -73,7 +74,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { motion } from "motion/react";
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { toast } from "sonner";
 
 const ADMIN_PASSWORD = "123456";
@@ -611,6 +612,27 @@ export default function AdminPage() {
   const toggleFeat = useToggleFeatured();
   const deleteOrder = useDeleteOrder();
   const deleteMessage = useDeleteContactMessage();
+  const seedFlavors = useSeedDefaultFlavors();
+  const hasSeededRef = useRef(false);
+
+  useEffect(() => {
+    if (
+      !hasSeededRef.current &&
+      !loadingFlavors &&
+      flavors !== undefined &&
+      flavors.length === 0 &&
+      !seedFlavors.isPending
+    ) {
+      hasSeededRef.current = true;
+      toast.loading("Adding products...", { id: "seeding" });
+      seedFlavors.mutate(undefined, {
+        onSuccess: () =>
+          toast.success("13 products added to the menu! 🍦", { id: "seeding" }),
+        onError: () =>
+          toast.error("Failed to load default products.", { id: "seeding" }),
+      });
+    }
+  }, [flavors, loadingFlavors, seedFlavors]);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingFlavor, setEditingFlavor] = useState<IceCreamFlavor | null>(

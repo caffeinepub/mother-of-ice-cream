@@ -95,6 +95,7 @@ export interface _SERVICE {
   >,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'searchFlavors' : ActorMethod<[string], Array<IceCreamFlavor>>,
+  'seedDefaultFlavors' : ActorMethod<[], bigint>,
   'setRazorpayKeyId' : ActorMethod<[string], undefined>,
   'setUpiId' : ActorMethod<[string], undefined>,
   'submitContactMessage' : ActorMethod<[string, string, string], undefined>,
