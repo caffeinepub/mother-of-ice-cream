@@ -3,8 +3,9 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFeaturedFlavors } from "@/hooks/useQueries";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Leaf, Star, Truck } from "lucide-react";
+import { ArrowRight, Leaf, Play, Star, Truck } from "lucide-react";
 import { motion } from "motion/react";
+import { useRef, useState } from "react";
 
 const SPRINKLES = [
   {
@@ -142,6 +143,159 @@ const FALLBACK_FLAVORS = [
     isFeatured: true,
   },
 ];
+
+function VideoSection() {
+  const videoRef = useRef<HTMLVideoElement>(null);
+  const [isPlaying, setIsPlaying] = useState(true);
+
+  const togglePlay = () => {
+    if (!videoRef.current) return;
+    if (videoRef.current.paused) {
+      videoRef.current.play();
+      setIsPlaying(true);
+    } else {
+      videoRef.current.pause();
+      setIsPlaying(false);
+    }
+  };
+
+  return (
+    <section
+      className="py-24 relative overflow-hidden"
+      style={{
+        background:
+          "linear-gradient(160deg, oklch(0.13 0.025 270), oklch(0.10 0.04 300), oklch(0.13 0.025 270))",
+      }}
+    >
+      {/* Background glow accents */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse at 20% 50%, oklch(0.64 0.22 355 / 0.12), transparent 55%), radial-gradient(ellipse at 80% 50%, oklch(0.82 0.13 185 / 0.1), transparent 55%)",
+        }}
+      />
+
+      <div className="max-w-5xl mx-auto px-6 relative z-10">
+        {/* Heading */}
+        <motion.div
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.7, ease: "easeOut" }}
+          className="text-center mb-12"
+        >
+          <p
+            className="text-sm font-bold uppercase tracking-widest mb-3"
+            style={{ color: "oklch(0.82 0.13 185)" }}
+          >
+            🎬 Behind the Scoop
+          </p>
+          <h2 className="text-4xl lg:text-5xl font-black text-white leading-tight mb-4">
+            Watch Us Create{" "}
+            <span
+              style={{
+                background:
+                  "linear-gradient(135deg, oklch(0.64 0.22 355), oklch(0.88 0.16 85))",
+                WebkitBackgroundClip: "text",
+                WebkitTextFillColor: "transparent",
+                backgroundClip: "text",
+              }}
+            >
+              Magic
+            </span>
+          </h2>
+          <p className="text-white/50 text-lg max-w-xl mx-auto">
+            From our kitchen to your hands — pure handcrafted goodness in every
+            scoop.
+          </p>
+        </motion.div>
+
+        {/* Video card */}
+        <motion.div
+          initial={{ opacity: 0, y: 50, scale: 0.96 }}
+          whileInView={{ opacity: 1, y: 0, scale: 1 }}
+          viewport={{ once: true, amount: 0.2 }}
+          transition={{ duration: 0.8, ease: "easeOut", delay: 0.15 }}
+          className="relative group cursor-pointer"
+          onClick={togglePlay}
+        >
+          {/* Glow ring */}
+          <div
+            className="absolute -inset-1 rounded-3xl opacity-40 blur-xl transition-opacity duration-500 group-hover:opacity-70"
+            style={{
+              background:
+                "linear-gradient(135deg, oklch(0.64 0.22 355), oklch(0.82 0.13 185))",
+            }}
+          />
+
+          <div className="relative rounded-3xl overflow-hidden shadow-2xl border border-white/10">
+            <video
+              ref={videoRef}
+              src="/assets/vid-20260406-wa0003-019d63d6-ed29-7618-9dc2-afc4cbd21b78.mp4"
+              autoPlay
+              muted
+              loop
+              playsInline
+              className="w-full object-cover"
+              style={{ maxHeight: "520px" }}
+            />
+
+            {/* Play/Pause overlay */}
+            <div
+              className="absolute inset-0 flex items-center justify-center transition-opacity duration-300"
+              style={{ opacity: isPlaying ? 0 : 1 }}
+            >
+              <div
+                className="w-20 h-20 rounded-full flex items-center justify-center backdrop-blur-sm border border-white/30"
+                style={{ background: "oklch(0.64 0.22 355 / 0.85)" }}
+              >
+                <Play className="w-8 h-8 text-white fill-white ml-1" />
+              </div>
+            </div>
+
+            {/* Hover overlay */}
+            <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors duration-300" />
+
+            {/* Tap-to-pause hint */}
+            <div
+              className="absolute bottom-4 right-4 text-xs font-semibold px-3 py-1.5 rounded-full backdrop-blur-sm border border-white/20"
+              style={{ color: "white", background: "oklch(0 0 0 / 0.45)" }}
+            >
+              {isPlaying ? "Tap to pause" : "Tap to play"}
+            </div>
+          </div>
+        </motion.div>
+
+        {/* Bottom label badges */}
+        <motion.div
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true, amount: 0.3 }}
+          transition={{ duration: 0.6, delay: 0.4 }}
+          className="flex flex-wrap justify-center gap-3 mt-8"
+        >
+          {[
+            "🍦 Fresh Daily",
+            "🧁 Made with Love",
+            "✨ Premium Ingredients",
+          ].map((badge) => (
+            <span
+              key={badge}
+              className="text-sm font-semibold px-5 py-2 rounded-full border border-white/15"
+              style={{
+                color: "oklch(0.9 0.05 300)",
+                background: "oklch(1 0 0 / 0.07)",
+              }}
+            >
+              {badge}
+            </span>
+          ))}
+        </motion.div>
+      </div>
+    </section>
+  );
+}
 
 export default function HomePage() {
   const { data: featuredFlavors, isLoading } = useFeaturedFlavors();
@@ -307,6 +461,9 @@ export default function HomePage() {
           </motion.div>
         </div>
       </section>
+
+      {/* ===== VIDEO SECTION ===== */}
+      <VideoSection />
 
       {/* ===== FEATURED FLAVORS ===== */}
       <section className="py-20 bg-white" id="featured">
