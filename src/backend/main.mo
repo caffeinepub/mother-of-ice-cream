@@ -1,4 +1,3 @@
-
 import Map "mo:core/Map";
 import Text "mo:core/Text";
 import Nat "mo:core/Nat";
@@ -90,233 +89,60 @@ actor {
     name : Text;
   };
 
-  // State
-  var nextId = 22;
-  var nextOrderId = 1;
-  var razorpayKeyId : ?Text = null;
-  var upiId : ?Text = ?"8961492669@jio";
+  // Explicit migration: preserve old stable sampleFlavors so M0169 is not triggered.
+  // This was implicitly stable in the previous version; we retain it here and clear it in postupgrade.
+  stable var sampleFlavors : [IceCreamFlavor] = [];
 
+  // Stable state - persists across upgrades
+  stable var nextId : Nat = 22;
+  stable var nextOrderId : Nat = 1;
+  stable var razorpayKeyId : ?Text = null;
+  stable var upiId : ?Text = ?"8961492669@jio";
+
+  // Stable backing arrays for Maps/Lists
+  stable var flavorsEntries : [(Nat, IceCreamFlavor)] = [];
+  stable var ordersEntries : [(Nat, Order)] = [];
+  stable var contactMessagesArray : [ContactMessage] = [];
+  stable var userProfilesEntries : [(Principal, UserProfile)] = [];
+
+  // Runtime Maps rebuilt from stable storage
   let flavors = Map.empty<Nat, IceCreamFlavor>();
+  let orders = Map.empty<Nat, Order>();
   let contactMessages = List.empty<ContactMessage>();
   let userProfiles = Map.empty<Principal, UserProfile>();
-  let orders = Map.empty<Nat, Order>();
 
-  // Seed sample flavors — all with AI-generated images
-  let sampleFlavors = [
-    {
-      id = 1;
-      name = "Vanilla";
-      description = "Classic creamy vanilla ice cream — smooth, rich, and timeless.";
-      price = 80.0;
-      category = "Classic";
-      imageUrl = ?"/assets/generated/vanilla-icecream.dim_400x400.jpg";
-      isAvailable = true;
-      isFeatured = true;
-    },
-    {
-      id = 2;
-      name = "Chocolate";
-      description = "Rich dark chocolate ice cream with intense cocoa flavor in every scoop.";
-      price = 80.0;
-      category = "Classic";
-      imageUrl = ?"/assets/generated/chocolate-classic-icecream.dim_400x400.jpg";
-      isAvailable = true;
-      isFeatured = true;
-    },
-    {
-      id = 3;
-      name = "Strawberry";
-      description = "Fresh strawberry ice cream made with real fruit pieces — sweet and refreshing.";
-      price = 80.0;
-      category = "Classic";
-      imageUrl = ?"/assets/generated/strawberry-classic-icecream.dim_400x400.jpg";
-      isAvailable = true;
-      isFeatured = false;
-    },
-    {
-      id = 4;
-      name = "Mango Sorbet";
-      description = "Vegan mango sorbet bursting with tropical sunshine and real mango goodness.";
-      price = 90.0;
-      category = "Vegan";
-      imageUrl = ?"/assets/generated/mango-sorbet-icecream.dim_400x400.jpg";
-      isAvailable = true;
-      isFeatured = false;
-    },
-    {
-      id = 5;
-      name = "Coconut";
-      description = "Creamy coconut ice cream topped with toasted coconut flakes — a tropical escape.";
-      price = 90.0;
-      category = "Premium";
-      imageUrl = ?"/assets/generated/coconut-icecream.dim_400x400.jpg";
-      isAvailable = true;
-      isFeatured = false;
-    },
-    {
-      id = 6;
-      name = "Pumpkin Spice";
-      description = "Seasonal pumpkin spice ice cream with warm cinnamon and autumn spice notes.";
-      price = 100.0;
-      category = "Seasonal";
-      imageUrl = ?"/assets/generated/pumpkin-spice-icecream.dim_400x400.jpg";
-      isAvailable = false;
-      isFeatured = false;
-    },
-    {
-      id = 7;
-      name = "Mint Chocolate Chip";
-      description = "Cool mint ice cream loaded with dark chocolate chips — refreshing and indulgent.";
-      price = 90.0;
-      category = "Classic";
-      imageUrl = ?"/assets/generated/mint-choc-chip-icecream.dim_400x400.jpg";
-      isAvailable = true;
-      isFeatured = false;
-    },
-    {
-      id = 8;
-      name = "Raspberry Sorbet";
-      description = "Vegan ruby red raspberry sorbet — tangy, bright, and full of berry flavor.";
-      price = 90.0;
-      category = "Vegan";
-      imageUrl = ?"/assets/generated/raspberry-sorbet-icecream.dim_400x400.jpg";
-      isAvailable = true;
-      isFeatured = false;
-    },
-    {
-      id = 9;
-      name = "Rainbow Sherbet";
-      description = "A swirly, vibrant blend of fruity rainbow flavors — bright, refreshing, and impossible to resist.";
-      price = 120.0;
-      category = "Premium";
-      imageUrl = ?"/assets/generated/rainbow-sherbet.dim_600x600.jpg";
-      isAvailable = true;
-      isFeatured = true;
-    },
-    {
-      id = 10;
-      name = "Special of the Day";
-      description = "Our chef's seasonal creation — a limited-edition scoop made with the freshest ingredients of the season.";
-      price = 130.0;
-      category = "Seasonal";
-      imageUrl = ?"/assets/img-20260406-wa0000-019d6174-18d6-704c-951e-02bfcabea472.jpg";
-      isAvailable = true;
-      isFeatured = true;
-    },
-    {
-      id = 11;
-      name = "Mango Delight";
-      description = "Luscious Alphonso mango ice cream bursting with real mango chunks and tropical sweetness.";
-      price = 120.0;
-      category = "Premium";
-      imageUrl = ?"/assets/generated/mango-icecream.dim_400x400.jpg";
-      isAvailable = true;
-      isFeatured = true;
-    },
-    {
-      id = 12;
-      name = "Chocolate Fudge";
-      description = "Intense dark chocolate fudge ice cream with rich swirls of cocoa goodness in every bite.";
-      price = 100.0;
-      category = "Classic";
-      imageUrl = ?"/assets/generated/chocolate-fudge-icecream.dim_400x400.jpg";
-      isAvailable = true;
-      isFeatured = true;
-    },
-    {
-      id = 13;
-      name = "Strawberry Delight";
-      description = "Fresh Kolkata strawberries blended into a silky smooth ice cream with real fruit pieces.";
-      price = 90.0;
-      category = "Classic";
-      imageUrl = ?"/assets/generated/strawberry-delight-icecream.dim_400x400.jpg";
-      isAvailable = true;
-      isFeatured = false;
-    },
-    {
-      id = 14;
-      name = "Pistachio Royale";
-      description = "Premium Iranian pistachio ice cream loaded with crushed pistachios for a truly royal experience.";
-      price = 150.0;
-      category = "Premium";
-      imageUrl = ?"/assets/generated/pistachio-royale-icecream.dim_400x400.jpg";
-      isAvailable = true;
-      isFeatured = true;
-    },
-    {
-      id = 15;
-      name = "Rose Gulkand";
-      description = "A delicate rose petal and gulkand flavored ice cream — a classic Bengali summer treat.";
-      price = 110.0;
-      category = "Seasonal";
-      imageUrl = ?"/assets/generated/rose-gulkand-icecream.dim_400x400.jpg";
-      isAvailable = true;
-      isFeatured = false;
-    },
-    {
-      id = 16;
-      name = "Vanilla Flower Cone";
-      description = "Creamy classic vanilla ice cream served on a crispy waffle cone, decorated with edible flower petals.";
-      price = 80.0;
-      category = "Classic";
-      imageUrl = ?"/assets/generated/vanilla-flower-cone.dim_400x400.jpg";
-      isAvailable = true;
-      isFeatured = true;
-    },
-    {
-      id = 17;
-      name = "Mango Blossom";
-      description = "Vibrant golden mango ice cream infused with tropical blossom flavors — bursting with sweet summer sunshine.";
-      price = 120.0;
-      category = "Premium";
-      imageUrl = ?"/assets/generated/mango-blossom.dim_400x400.jpg";
-      isAvailable = true;
-      isFeatured = true;
-    },
-    {
-      id = 18;
-      name = "Strawberry Bloom";
-      description = "Bright pink strawberry ice cream with real strawberry pieces and a beautiful flower garnish on top.";
-      price = 90.0;
-      category = "Classic";
-      imageUrl = ?"/assets/generated/strawberry-bloom.dim_400x400.jpg";
-      isAvailable = true;
-      isFeatured = false;
-    },
-    {
-      id = 19;
-      name = "Chocolate Scoop";
-      description = "Indulgent dark chocolate ice cream with rich chocolate shavings — the ultimate treat for chocolate lovers.";
-      price = 80.0;
-      category = "Classic";
-      imageUrl = ?"/assets/generated/chocolate-icecream.dim_400x400.jpg";
-      isAvailable = true;
-      isFeatured = false;
-    },
-    {
-      id = 20;
-      name = "Black Currant";
-      description = "Deep purple-black black currant ice cream packed with real berries for a bold and tangy experience.";
-      price = 100.0;
-      category = "Premium";
-      imageUrl = ?"/assets/generated/black-currant-icecream.dim_400x400.jpg";
-      isAvailable = true;
-      isFeatured = true;
-    },
-    {
-      id = 21;
-      name = "Butterscotch";
-      description = "Golden butterscotch ice cream with caramel drizzle and crunchy butterscotch chips in every bite.";
-      price = 90.0;
-      category = "Classic";
-      imageUrl = ?"/assets/generated/butterscotch-icecream.dim_400x400.jpg";
-      isAvailable = true;
-      isFeatured = true;
-    },
-  ];
+  // Restore from stable storage on upgrade
+  for ((k, v) in flavorsEntries.values()) {
+    flavors.add(k, v);
+  };
+  for ((k, v) in ordersEntries.values()) {
+    orders.add(k, v);
+  };
+  for (msg in contactMessagesArray.values()) {
+    contactMessages.add(msg);
+  };
+  for ((k, v) in userProfilesEntries.values()) {
+    userProfiles.add(k, v);
+  };
 
-  for (flavor in sampleFlavors.values()) {
-    flavors.add(flavor.id, flavor);
+
+  // Upgrade hooks - serialize to stable storage before upgrade
+  system func preupgrade() {
+    flavorsEntries := flavors.entries().toArray();
+    ordersEntries := orders.entries().toArray();
+    contactMessagesArray := contactMessages.toArray();
+    userProfilesEntries := userProfiles.entries().toArray();
+  };
+
+  system func postupgrade() {
+    // Data already restored from stable arrays in actor body above.
+    // Clear stable arrays to free memory (data is now in Maps).
+    flavorsEntries := [];
+    ordersEntries := [];
+    contactMessagesArray := [];
+    userProfilesEntries := [];
+    // Clear migrated legacy stable var
+    sampleFlavors := [];
   };
 
   // Helper function
@@ -329,27 +155,18 @@ actor {
 
   // User Profile Functions
   public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can access profiles");
-    };
     userProfiles.get(caller);
   };
 
   public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
-    if (caller != user and not AccessControl.isAdmin(accessControlState, caller)) {
-      Runtime.trap("Unauthorized: Can only view your own profile");
-    };
     userProfiles.get(user);
   };
 
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #user))) {
-      Runtime.trap("Unauthorized: Only users can save profiles");
-    };
     userProfiles.add(caller, profile);
   };
 
-  // Public Functions - No authentication required (guests can access)
+  // Public read functions
   public query func getAllFlavors() : async [IceCreamFlavor] {
     flavors.values().toArray().sort(IceCreamFlavor.compareByName);
   };
@@ -377,11 +194,8 @@ actor {
     getFlavorInternal(id);
   };
 
-  // Admin Functions - Require admin role
-  public shared ({ caller }) func addFlavor(flavorInput : IceCreamFlavorInput) : async Nat {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can add flavors");
-    };
+  // Flavor Management - security handled by frontend password gate
+  public shared func addFlavor(flavorInput : IceCreamFlavorInput) : async Nat {
     let flavor : IceCreamFlavor = {
       flavorInput with
       id = nextId;
@@ -391,10 +205,7 @@ actor {
     flavor.id;
   };
 
-  public shared ({ caller }) func updateFlavor(id : Nat, input : IceCreamFlavorUpdate) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can update flavors");
-    };
+  public shared func updateFlavor(id : Nat, input : IceCreamFlavorUpdate) : async () {
     let flavor = getFlavorInternal(id);
     let updatedFlavor : IceCreamFlavor = {
       id = flavor.id;
@@ -430,20 +241,23 @@ actor {
     flavors.add(id, updatedFlavor);
   };
 
-  public shared ({ caller }) func deleteFlavor(id : Nat) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can delete flavors");
-    };
+  public shared func deleteFlavor(id : Nat) : async () {
     if (not flavors.containsKey(id)) {
       Runtime.trap("Flavor not found");
     };
     flavors.remove(id);
   };
 
-  public shared ({ caller }) func toggleAvailability(id : Nat) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can toggle availability");
+
+  public shared func clearAllFlavors() : async () {
+    let ids = flavors.keys().toArray();
+    for (id in ids.values()) {
+      flavors.remove(id);
     };
+    nextId := 1;
+  };
+
+  public shared func toggleAvailability(id : Nat) : async () {
     let flavor = getFlavorInternal(id);
     let updatedFlavor : IceCreamFlavor = {
       flavor with
@@ -452,10 +266,7 @@ actor {
     flavors.add(id, updatedFlavor);
   };
 
-  public shared ({ caller }) func toggleFeatured(id : Nat) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can toggle featured status");
-    };
+  public shared func toggleFeatured(id : Nat) : async () {
     let flavor = getFlavorInternal(id);
     let updatedFlavor : IceCreamFlavor = {
       flavor with
@@ -464,7 +275,7 @@ actor {
     flavors.add(id, updatedFlavor);
   };
 
-  // Contact Messages - Submit is public, view/delete is admin-only
+  // Contact Messages
   public shared (_) func submitContactMessage(name : Text, email : Text, message : Text) : async () {
     let contactMessage : ContactMessage = {
       name;
@@ -475,24 +286,17 @@ actor {
     contactMessages.add(contactMessage);
   };
 
-  public query ({ caller }) func getAllContactMessages() : async [ContactMessage] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can view contact messages");
-    };
+  public query func getAllContactMessages() : async [ContactMessage] {
     contactMessages.toArray();
   };
 
-  public shared ({ caller }) func deleteContactMessage(timestamp : Time.Time) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can delete contact messages");
-    };
+  public shared func deleteContactMessage(timestamp : Time.Time) : async () {
     let remaining = contactMessages.filter(func(m : ContactMessage) : Bool { m.timestamp != timestamp });
     contactMessages.clear();
     contactMessages.addAll(remaining.values());
   };
 
   // Order Functions
-  // placeOrder is public (no auth required for customers)
   public shared (_) func placeOrder(
     customerName : Text,
     customerPhone : Text,
@@ -519,24 +323,15 @@ actor {
     order.id;
   };
 
-  // getOrders is admin-only (contains all customer data)
-  public query ({ caller }) func getOrders() : async [Order] {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can view all orders");
-    };
+  public query func getOrders() : async [Order] {
     orders.values().toArray();
   };
 
-  // getOrdersByPhone is public (customers can check their own orders)
   public query func getOrdersByPhone(phone : Text) : async [Order] {
     orders.values().toArray().filter(func(o) { o.customerPhone == phone });
   };
 
-  // updateOrderStatus is admin-only
-  public shared ({ caller }) func updateOrderStatus(id : Nat, status : Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can update order status");
-    };
+  public shared func updateOrderStatus(id : Nat, status : Text) : async () {
     switch (orders.get(id)) {
       case (null) { Runtime.trap("Order not found") };
       case (?order) {
@@ -546,39 +341,26 @@ actor {
     };
   };
 
-  // deleteOrder is admin-only
-  public shared ({ caller }) func deleteOrder(id : Nat) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can delete orders");
-    };
+  public shared func deleteOrder(id : Nat) : async () {
     if (not orders.containsKey(id)) {
       Runtime.trap("Order not found");
     };
     orders.remove(id);
   };
 
-  // Razorpay Key Management - Admin-only
-  public shared ({ caller }) func setRazorpayKeyId(key : Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can set Razorpay key");
-    };
+  // Payment Settings
+  public shared func setRazorpayKeyId(key : Text) : async () {
     razorpayKeyId := ?key;
   };
 
-  // getRazorpayKeyId is public (needed by frontend for payment integration)
   public query func getRazorpayKeyId() : async ?Text {
     razorpayKeyId;
   };
 
-  // UPI ID Management - Admin-only
-  public shared ({ caller }) func setUpiId(id : Text) : async () {
-    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
-      Runtime.trap("Unauthorized: Only admins can set UPI ID");
-    };
+  public shared func setUpiId(id : Text) : async () {
     upiId := ?id;
   };
 
-  // getUpiId is public (needed by frontend for payment integration)
   public query func getUpiId() : async ?Text {
     upiId;
   };

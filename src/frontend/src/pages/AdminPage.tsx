@@ -33,6 +33,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import {
   useAddFlavor,
   useAllFlavors,
+  useClearAllFlavors,
   useContactMessages,
   useDeleteContactMessage,
   useDeleteFlavor,
@@ -605,6 +606,7 @@ export default function AdminPage() {
   const addFlavor = useAddFlavor();
   const updateFlavor = useUpdateFlavor();
   const deleteFlavor = useDeleteFlavor();
+  const clearAllFlavors = useClearAllFlavors();
   const toggleAvail = useToggleAvailability();
   const toggleFeat = useToggleFeatured();
   const deleteOrder = useDeleteOrder();
@@ -621,6 +623,7 @@ export default function AdminPage() {
   const [deleteMessageTarget, setDeleteMessageTarget] = useState<bigint | null>(
     null,
   );
+  const [clearAllConfirm, setClearAllConfirm] = useState(false);
 
   if (!unlocked) {
     return <PasswordGate onUnlock={() => setUnlocked(true)} />;
@@ -651,6 +654,17 @@ export default function AdminPage() {
       toast.error("Failed to delete flavor.");
     } finally {
       setDeleteTarget(null);
+    }
+  }
+
+  async function handleClearAll() {
+    try {
+      await clearAllFlavors.mutateAsync();
+      toast.success("All flavors cleared. Add your own from the admin panel.");
+    } catch {
+      toast.error("Failed to clear flavors.");
+    } finally {
+      setClearAllConfirm(false);
     }
   }
 
@@ -709,6 +723,9 @@ export default function AdminPage() {
     setEditingFlavor(flavor);
     setModalOpen(true);
   }
+
+  const totalFlavors = flavors?.length ?? 0;
+  const availableFlavors = flavors?.filter((f) => f.isAvailable).length ?? 0;
 
   return (
     <div className="bg-background min-h-screen">
@@ -778,16 +795,37 @@ export default function AdminPage() {
           {/* FLAVORS TAB */}
           <TabsContent value="flavors">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-extrabold text-foreground">
-                All Flavors ({flavors?.length ?? 0})
-              </h2>
-              <Button
-                onClick={openAdd}
-                className="rounded-pill gradient-pink border-0 text-white font-bold shadow-candy hover:shadow-candy-lg transition-all"
-                data-ocid="admin.add_flavor.open_modal_button"
-              >
-                <Plus className="mr-1.5 w-4 h-4" /> Add Flavor
-              </Button>
+              <div>
+                <h2 className="text-xl font-extrabold text-foreground">
+                  All Flavors ({totalFlavors})
+                </h2>
+                <p className="text-sm text-muted-foreground mt-0.5">
+                  {availableFlavors} Available
+                  {totalFlavors - availableFlavors > 0 && (
+                    <span className="ml-2 text-red-500 font-semibold">
+                      · {totalFlavors - availableFlavors} Sold Out
+                    </span>
+                  )}
+                </p>
+              </div>
+              <div className="flex gap-2">
+                <Button
+                  variant="destructive"
+                  onClick={() => setClearAllConfirm(true)}
+                  className="rounded-pill font-bold"
+                  disabled={!flavors?.length}
+                  data-ocid="admin.clear_all_flavors_button"
+                >
+                  Clear All
+                </Button>
+                <Button
+                  onClick={openAdd}
+                  className="rounded-pill gradient-pink border-0 text-white font-bold shadow-candy hover:shadow-candy-lg transition-all"
+                  data-ocid="admin.add_flavor.open_modal_button"
+                >
+                  <Plus className="mr-1.5 w-4 h-4" /> Add Flavor
+                </Button>
+              </div>
             </div>
 
             {loadingFlavors ? (
@@ -813,6 +851,9 @@ export default function AdminPage() {
                 <Table data-ocid="admin.flavors.table">
                   <TableHeader>
                     <TableRow className="bg-muted/50">
+                      <TableHead className="font-extrabold w-16">
+                        Image
+                      </TableHead>
                       <TableHead className="font-extrabold">Flavor</TableHead>
                       <TableHead className="font-extrabold">Category</TableHead>
                       <TableHead className="font-extrabold">Price</TableHead>
@@ -824,105 +865,127 @@ export default function AdminPage() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {flavors.map((flavor, idx) => (
-                      <TableRow
-                        key={String(flavor.id)}
-                        className="hover:bg-muted/30 transition-colors"
-                        data-ocid={`admin.flavors.row.${idx + 1}`}
-                      >
-                        <TableCell>
-                          <div className="font-bold text-foreground">
-                            {flavor.name}
-                          </div>
-                          <div className="text-xs text-muted-foreground line-clamp-1 max-w-xs">
-                            {flavor.description}
-                          </div>
-                        </TableCell>
-                        <TableCell>
-                          <Badge
-                            variant="secondary"
-                            className="rounded-pill text-xs font-semibold"
-                          >
-                            {flavor.category}
-                          </Badge>
-                        </TableCell>
-                        <TableCell className="font-bold">
-                          ₹{flavor.price.toFixed(0)}
-                        </TableCell>
-                        <TableCell>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleToggleAvail(
-                                flavor.id,
-                                flavor.name,
-                                flavor.isAvailable,
-                              )
-                            }
-                            className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-pill transition-colors ${
-                              flavor.isAvailable
-                                ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
-                                : "bg-red-100 text-red-600 hover:bg-red-200"
-                            }`}
-                            data-ocid={`admin.flavors.toggle.${idx + 1}`}
-                          >
-                            {flavor.isAvailable ? (
-                              <Eye className="w-3 h-3" />
+                    {flavors.map((flavor, idx) => {
+                      const imageUrl = Array.isArray(flavor.imageUrl)
+                        ? (flavor.imageUrl[0] ?? null)
+                        : ((flavor.imageUrl as string | null | undefined) ??
+                          null);
+
+                      return (
+                        <TableRow
+                          key={String(flavor.id)}
+                          className="hover:bg-muted/30 transition-colors"
+                          data-ocid={`admin.flavors.row.${idx + 1}`}
+                        >
+                          {/* Image thumbnail */}
+                          <TableCell className="py-2">
+                            {imageUrl ? (
+                              <img
+                                src={imageUrl}
+                                alt={flavor.name}
+                                className="w-12 h-12 rounded-lg object-cover border border-border/40 shadow-sm"
+                              />
                             ) : (
-                              <EyeOff className="w-3 h-3" />
+                              <div className="w-12 h-12 rounded-lg bg-primary/10 border border-border/40 flex items-center justify-center text-xl">
+                                🍦
+                              </div>
                             )}
-                            {flavor.isAvailable ? "Available" : "Sold Out"}
-                          </button>
-                        </TableCell>
-                        <TableCell>
-                          <button
-                            type="button"
-                            onClick={() =>
-                              handleToggleFeat(
-                                flavor.id,
-                                flavor.name,
-                                flavor.isFeatured,
-                              )
-                            }
-                            className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-pill transition-colors ${
-                              flavor.isFeatured
-                                ? "bg-accent/40 text-accent-foreground hover:bg-accent/60"
-                                : "bg-muted text-muted-foreground hover:bg-muted/60"
-                            }`}
-                            data-ocid={`admin.flavors.toggle.${idx + 1}`}
-                          >
-                            {flavor.isFeatured ? (
-                              <Star className="w-3 h-3 fill-current" />
-                            ) : (
-                              <StarOff className="w-3 h-3" />
-                            )}
-                            {flavor.isFeatured ? "Featured" : "Normal"}
-                          </button>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => openEdit(flavor)}
-                              className="h-8 w-8 p-0 hover:text-primary hover:bg-primary/10 rounded-full"
-                              data-ocid={`admin.flavors.edit_button.${idx + 1}`}
+                          </TableCell>
+
+                          <TableCell>
+                            <div className="font-bold text-foreground">
+                              {flavor.name}
+                            </div>
+                            <div className="text-xs text-muted-foreground line-clamp-1 max-w-xs">
+                              {flavor.description}
+                            </div>
+                          </TableCell>
+                          <TableCell>
+                            <Badge
+                              variant="secondary"
+                              className="rounded-pill text-xs font-semibold"
                             >
-                              <Pencil className="w-3.5 h-3.5" />
-                            </Button>
-                            <Button
-                              size="sm"
-                              variant="ghost"
-                              onClick={() => setDeleteTarget(flavor.id)}
-                              className="h-8 w-8 p-0 hover:text-destructive hover:bg-destructive/10 rounded-full"
-                              data-ocid={`admin.flavors.delete_button.${idx + 1}`}
+                              {flavor.category}
+                            </Badge>
+                          </TableCell>
+                          <TableCell className="font-bold">
+                            ₹{flavor.price.toFixed(0)}
+                          </TableCell>
+                          <TableCell>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleToggleAvail(
+                                  flavor.id,
+                                  flavor.name,
+                                  flavor.isAvailable,
+                                )
+                              }
+                              className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-pill transition-colors ${
+                                flavor.isAvailable
+                                  ? "bg-emerald-100 text-emerald-700 hover:bg-emerald-200"
+                                  : "bg-red-100 text-red-600 hover:bg-red-200"
+                              }`}
+                              data-ocid={`admin.flavors.toggle.${idx + 1}`}
                             >
-                              <Trash2 className="w-3.5 h-3.5" />
-                            </Button>
-                          </div>
-                        </TableCell>
-                      </TableRow>
-                    ))}
+                              {flavor.isAvailable ? (
+                                <Eye className="w-3 h-3" />
+                              ) : (
+                                <EyeOff className="w-3 h-3" />
+                              )}
+                              {flavor.isAvailable ? "Available" : "Sold Out"}
+                            </button>
+                          </TableCell>
+                          <TableCell>
+                            <button
+                              type="button"
+                              onClick={() =>
+                                handleToggleFeat(
+                                  flavor.id,
+                                  flavor.name,
+                                  flavor.isFeatured,
+                                )
+                              }
+                              className={`inline-flex items-center gap-1.5 text-xs font-bold px-3 py-1 rounded-pill transition-colors ${
+                                flavor.isFeatured
+                                  ? "bg-accent/40 text-accent-foreground hover:bg-accent/60"
+                                  : "bg-muted text-muted-foreground hover:bg-muted/60"
+                              }`}
+                              data-ocid={`admin.flavors.toggle.${idx + 1}`}
+                            >
+                              {flavor.isFeatured ? (
+                                <Star className="w-3 h-3 fill-current" />
+                              ) : (
+                                <StarOff className="w-3 h-3" />
+                              )}
+                              {flavor.isFeatured ? "Featured" : "Normal"}
+                            </button>
+                          </TableCell>
+                          <TableCell className="text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => openEdit(flavor)}
+                                className="h-8 w-8 p-0 hover:text-primary hover:bg-primary/10 rounded-full"
+                                data-ocid={`admin.flavors.edit_button.${idx + 1}`}
+                              >
+                                <Pencil className="w-3.5 h-3.5" />
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="ghost"
+                                onClick={() => setDeleteTarget(flavor.id)}
+                                className="h-8 w-8 p-0 hover:text-destructive hover:bg-destructive/10 rounded-full"
+                                data-ocid={`admin.flavors.delete_button.${idx + 1}`}
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                              </Button>
+                            </div>
+                          </TableCell>
+                        </TableRow>
+                      );
+                    })}
                   </TableBody>
                 </Table>
               </div>
@@ -1146,6 +1209,43 @@ export default function AdminPage() {
               data-ocid="admin.delete_message.confirm_button"
             >
               Yes, Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
+      {/* Clear All Flavors Confirm */}
+      <AlertDialog
+        open={clearAllConfirm}
+        onOpenChange={(v) => !v && setClearAllConfirm(false)}
+      >
+        <AlertDialogContent
+          className="rounded-card"
+          data-ocid="admin.clear_all.dialog"
+        >
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <Trash2 className="w-5 h-5 text-destructive" /> Clear All Flavors?
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              This will permanently delete ALL {totalFlavors} flavors from your
+              menu. This action cannot be undone. You can add your own flavors
+              after clearing.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              className="rounded-pill"
+              data-ocid="admin.clear_all.cancel_button"
+            >
+              Cancel
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={handleClearAll}
+              className="rounded-pill bg-destructive text-destructive-foreground hover:bg-destructive/90"
+              data-ocid="admin.clear_all.confirm_button"
+            >
+              Yes, Clear All
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>

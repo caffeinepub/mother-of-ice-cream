@@ -1,11 +1,7 @@
 import { Link } from "@tanstack/react-router";
-import { Heart } from "lucide-react";
 import { SiFacebook, SiInstagram, SiX } from "react-icons/si";
 
 export default function Footer() {
-  const hostname =
-    typeof window !== "undefined" ? window.location.hostname : "";
-
   return (
     <footer className="bg-foreground text-white">
       <div className="max-w-6xl mx-auto px-6 py-14">
@@ -91,21 +87,9 @@ export default function Footer() {
           </div>
         </div>
 
-        <div className="mt-10 pt-6 border-t border-white/10 flex flex-col sm:flex-row items-center justify-between gap-3">
+        <div className="mt-10 pt-6 border-t border-white/10">
           <p className="text-white/40 text-xs">
             © Mother of Ice-cream. All rights reserved.
-          </p>
-          <p className="text-white/40 text-xs flex items-center gap-1">
-            Built with <Heart size={11} className="text-primary fill-primary" />{" "}
-            using{" "}
-            <a
-              href={`https://caffeine.ai?utm_source=caffeine-footer&utm_medium=referral&utm_content=${encodeURIComponent(hostname)}`}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="hover:text-primary transition-colors"
-            >
-              caffeine.ai
-            </a>
           </p>
         </div>
       </div>

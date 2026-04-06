@@ -72,6 +72,7 @@ export interface _SERVICE {
   'addFlavor' : ActorMethod<[IceCreamFlavorInput], bigint>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
   'deleteContactMessage' : ActorMethod<[Time], undefined>,
+  'clearAllFlavors' : ActorMethod<[], undefined>,
   'deleteFlavor' : ActorMethod<[bigint], undefined>,
   'deleteOrder' : ActorMethod<[bigint], undefined>,
   'getAllContactMessages' : ActorMethod<[], Array<ContactMessage>>,

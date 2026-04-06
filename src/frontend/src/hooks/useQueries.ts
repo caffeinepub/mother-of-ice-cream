@@ -36,40 +36,56 @@ export interface Order {
 }
 
 export function useAllFlavors() {
-  const { actor, isFetching } = useActor();
-  return useQuery<IceCreamFlavor[]>({
+  const { actor, isFetching: actorFetching } = useActor();
+  const query = useQuery<IceCreamFlavor[]>({
     queryKey: ["flavors", "all"],
     queryFn: async () => {
       if (!actor) return [];
       return actor.getAllFlavors();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
   });
+
+  return {
+    ...query,
+    // Treat as loading while actor is still initializing
+    isLoading: actorFetching || query.isLoading,
+  };
 }
 
 export function useFeaturedFlavors() {
-  const { actor, isFetching } = useActor();
-  return useQuery<IceCreamFlavor[]>({
+  const { actor, isFetching: actorFetching } = useActor();
+  const query = useQuery<IceCreamFlavor[]>({
     queryKey: ["flavors", "featured"],
     queryFn: async () => {
       if (!actor) return [];
       return actor.getFeaturedFlavors();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
   });
+
+  return {
+    ...query,
+    isLoading: actorFetching || query.isLoading,
+  };
 }
 
 export function useFlavorsByCategory(category: string) {
-  const { actor, isFetching } = useActor();
-  return useQuery<IceCreamFlavor[]>({
+  const { actor, isFetching: actorFetching } = useActor();
+  const query = useQuery<IceCreamFlavor[]>({
     queryKey: ["flavors", "category", category],
     queryFn: async () => {
       if (!actor) return [];
       if (category === "All") return actor.getAllFlavors();
       return actor.getFlavorsByCategory(category);
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
   });
+
+  return {
+    ...query,
+    isLoading: actorFetching || query.isLoading,
+  };
 }
 
 export function useIsAdmin() {
@@ -85,15 +101,20 @@ export function useIsAdmin() {
 }
 
 export function useContactMessages() {
-  const { actor, isFetching } = useActor();
-  return useQuery<ContactMessage[]>({
+  const { actor, isFetching: actorFetching } = useActor();
+  const query = useQuery<ContactMessage[]>({
     queryKey: ["contactMessages"],
     queryFn: async () => {
       if (!actor) return [];
       return actor.getAllContactMessages();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
   });
+
+  return {
+    ...query,
+    isLoading: actorFetching || query.isLoading,
+  };
 }
 
 export function useAddFlavor() {
@@ -134,6 +155,20 @@ export function useDeleteFlavor() {
     mutationFn: async (id: bigint) => {
       if (!actor) throw new Error("Not connected");
       return actor.deleteFlavor(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["flavors"] });
+    },
+  });
+}
+
+export function useClearAllFlavors() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async () => {
+      if (!actor) throw new Error("Not connected");
+      return actor.clearAllFlavors();
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["flavors"] });
@@ -227,15 +262,20 @@ export function usePlaceOrder() {
 }
 
 export function useGetOrders() {
-  const { actor, isFetching } = useActor();
-  return useQuery<Order[]>({
+  const { actor, isFetching: actorFetching } = useActor();
+  const query = useQuery<Order[]>({
     queryKey: ["orders"],
     queryFn: async () => {
       if (!actor) return [];
       return actor.getOrders();
     },
-    enabled: !!actor && !isFetching,
+    enabled: !!actor && !actorFetching,
   });
+
+  return {
+    ...query,
+    isLoading: actorFetching || query.isLoading,
+  };
 }
 
 export function useGetRazorpayKey() {

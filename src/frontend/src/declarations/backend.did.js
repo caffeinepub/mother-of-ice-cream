@@ -73,6 +73,7 @@ export const idlService = IDL.Service({
   'addFlavor' : IDL.Func([IceCreamFlavorInput], [IDL.Nat], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
   'deleteContactMessage' : IDL.Func([Time], [], []),
+  'clearAllFlavors' : IDL.Func([], [], []),
   'deleteFlavor' : IDL.Func([IDL.Nat], [], []),
   'deleteOrder' : IDL.Func([IDL.Nat], [], []),
   'getAllContactMessages' : IDL.Func([], [IDL.Vec(ContactMessage)], ['query']),
@@ -189,6 +190,7 @@ export const idlFactory = ({ IDL }) => {
     'addFlavor' : IDL.Func([IceCreamFlavorInput], [IDL.Nat], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
     'deleteContactMessage' : IDL.Func([Time], [], []),
+    'clearAllFlavors' : IDL.Func([], [], []),
     'deleteFlavor' : IDL.Func([IDL.Nat], [], []),
     'deleteOrder' : IDL.Func([IDL.Nat], [], []),
     'getAllContactMessages' : IDL.Func(

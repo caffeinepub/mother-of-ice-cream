@@ -155,6 +155,7 @@ export interface backendInterface {
     addFlavor(flavorInput: IceCreamFlavorInput): Promise<bigint>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     deleteContactMessage(timestamp: Time): Promise<void>;
+    clearAllFlavors(): Promise<void>;
     deleteFlavor(id: bigint): Promise<void>;
     deleteOrder(id: bigint): Promise<void>;
     getAllContactMessages(): Promise<Array<ContactMessage>>;
@@ -238,6 +239,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.deleteContactMessage(arg0);
+            return result;
+        }
+    }
+    async clearAllFlavors(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.clearAllFlavors();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.clearAllFlavors();
             return result;
         }
     }

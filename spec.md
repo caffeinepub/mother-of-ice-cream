@@ -1,32 +1,23 @@
 # Mother of Ice-cream
 
 ## Current State
-- Homepage has a hero section with animated ice cream image, featured flavors grid, USP band, and CTA band
-- Checkout supports Google Pay, PhonePe (via UPI deep link + UTR), Razorpay (cards/UPI), and Cash on Delivery
-- No video on the site yet
-- Vite build has `minify: false` — performance is not optimized
-- Video file uploaded: `/assets/vid-20260406-wa0003-019d63d6-ed29-7618-9dc2-afc4cbd21b78.mp4`
+The backend seeds 21 hardcoded ice cream flavors on first deploy. These are stored in stable storage and persist across upgrades. The admin panel lets the user add/edit/delete individual flavors but has no way to bulk-clear all existing ones.
 
 ## Requested Changes (Diff)
 
 ### Add
-- Video section on homepage (between hero and featured flavors, or within the hero) using the uploaded MP4 file
-- Production build optimizations: enable minify, chunk splitting, asset compression hints
+- `clearAllFlavors` public function to backend that removes all flavors from the map
+- A "Clear All Flavors" button in the Admin panel → Flavors tab that calls this function (with confirmation dialog)
+- Remove the 21-flavor seed block from the backend so future clean deploys start empty
 
 ### Modify
-- `vite.config.js`: enable `minify: 'esbuild'`, `rollupOptions.output.manualChunks` for vendor splitting
-- `HomePage.tsx`: add a video section showcasing the uploaded video (autoplay, muted, loop, playsInline for mobile compatibility)
-- `index.html`: add resource hints (preconnect, dns-prefetch) for faster third-party loads
-- Payment system: already fully implemented (Google Pay, PhonePe, Razorpay, Cash on Delivery) — no changes needed
+- Backend: Remove the `if (flavors.size() == 0)` seed block entirely
+- AdminPage: Add a danger "Clear All Flavors" button in the Flavors tab header area
 
 ### Remove
-- Nothing removed
+- The 21-flavor hardcoded seed data from main.mo
 
 ## Implementation Plan
-1. Update `vite.config.js` to enable minification and vendor code splitting for faster load times
-2. Add a video showcase section to `HomePage.tsx` using the uploaded MP4 at `/assets/vid-20260406-wa0003-019d63d6-ed29-7618-9dc2-afc4cbd21b78.mp4`
-   - Autoplay, muted, loop, playsInline
-   - Fallback text for browsers that don't support video
-   - Rounded card with a title like "Watch Our Story" or "See Us in Action"
-3. Update `index.html` with preconnect hints for Razorpay and performance meta tags
-4. Validate and deploy
+1. Edit `src/backend/main.mo`: remove the seed block and add `clearAllFlavors()` function
+2. Update `src/frontend/src/declarations/backend.did.d.ts` and `backend.did.js` to include `clearAllFlavors`
+3. Edit `src/frontend/src/pages/AdminPage.tsx`: add a hook call for `clearAllFlavors`, add a "Clear All Flavors" button with confirmation dialog in the Flavors tab
