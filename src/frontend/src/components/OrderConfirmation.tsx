@@ -1,7 +1,7 @@
 import { Button } from "@/components/ui/button";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Link } from "@tanstack/react-router";
-import { CheckCircle2, Clock, MapPin, Truck } from "lucide-react";
+import { CheckCircle2, Clock, MapPin } from "lucide-react";
 import { motion } from "motion/react";
 
 interface OrderConfirmationProps {
@@ -10,7 +10,7 @@ interface OrderConfirmationProps {
   orderId: bigint;
   customerName: string;
   totalAmount: number;
-  paymentMethod?: "online" | "cod";
+  paymentMethod?: "online";
 }
 
 export default function OrderConfirmation({
@@ -19,10 +19,7 @@ export default function OrderConfirmation({
   orderId,
   customerName,
   totalAmount,
-  paymentMethod = "online",
 }: OrderConfirmationProps) {
-  const isCod = paymentMethod === "cod";
-
   return (
     <Dialog open={open} onOpenChange={(v) => !v && onClose()}>
       <DialogContent
@@ -42,26 +39,19 @@ export default function OrderConfirmation({
             transition={{ delay: 0.15, type: "spring", stiffness: 200 }}
             className="w-20 h-20 rounded-full flex items-center justify-center"
             style={{
-              background: isCod
-                ? "linear-gradient(135deg, oklch(0.94 0.10 160), oklch(0.90 0.14 150))"
-                : "linear-gradient(135deg, oklch(0.94 0.12 145), oklch(0.92 0.14 160))",
+              background:
+                "linear-gradient(135deg, oklch(0.94 0.12 145), oklch(0.92 0.14 160))",
             }}
           >
-            {isCod ? (
-              <Truck className="w-10 h-10 text-emerald-600" />
-            ) : (
-              <CheckCircle2 className="w-10 h-10 text-emerald-600" />
-            )}
+            <CheckCircle2 className="w-10 h-10 text-emerald-600" />
           </motion.div>
 
           <div>
             <h2 className="text-2xl font-black text-foreground mb-1">
-              {isCod ? "Order Placed! 🛵" : "Order Confirmed! 🎉"}
+              Order Confirmed! 🎉
             </h2>
             <p className="text-muted-foreground text-sm">
-              {isCod
-                ? `Thank you, ${customerName}! Your scoops are on the way — pay cash on delivery.`
-                : `Thank you, ${customerName}! Your scoops are on their way.`}
+              Thank you, {customerName}! Your party order is confirmed.
             </p>
           </div>
 
@@ -77,21 +67,18 @@ export default function OrderConfirmation({
             </div>
             <div className="flex justify-between items-center">
               <span className="text-sm text-muted-foreground font-semibold">
-                {isCod ? "Amount Due on Delivery" : "Total Paid"}
+                Amount Paid
               </span>
               <span className="font-extrabold text-primary text-lg">
                 ₹{totalAmount.toFixed(0)}
               </span>
             </div>
-            {isCod && (
-              <div className="flex items-center gap-2 mt-1 pt-2 border-t border-border">
-                <Truck className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span className="text-xs text-emerald-700 font-semibold">
-                  Keep ₹{totalAmount.toFixed(0)} ready to pay the delivery
-                  person
-                </span>
-              </div>
-            )}
+            <div className="flex items-center gap-2 mt-1 pt-2 border-t border-border">
+              <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
+              <span className="text-xs text-emerald-700 font-semibold">
+                Advance payment received — booking confirmed!
+              </span>
+            </div>
           </div>
 
           {/* ETA badge */}
@@ -101,7 +88,7 @@ export default function OrderConfirmation({
           >
             <Clock className="w-4 h-4 text-accent-foreground" />
             <span className="text-sm font-bold">
-              Estimated delivery: 30–45 minutes
+              We'll contact you to confirm your party details
             </span>
           </div>
 

@@ -1,36 +1,40 @@
 # Mother of Ice-cream
 
 ## Current State
-The app has stable backend storage for flavors. The old 21 flavors were stored in stable maps. There's a `clearAllFlavors` function and individual `addFlavor` calls. All products use AI-generated images. The admin panel has full CRUD for flavors.
+Checkout modal (`CheckoutModal.tsx`) offers three payment options:
+1. Google Pay (UPI tile)
+2. PhonePe (UPI tile)
+3. Cash on Delivery (always shown as a separate tile below the grid)
+
+When neither UPI nor Razorpay is configured, a simple "Cash on Delivery" info block is shown. The `handlePayment` function has a `cod` branch that places an order with no payment reference.
 
 ## Requested Changes (Diff)
 
 ### Add
-- 13 new products with AI-generated images replacing all old ones:
-  1. Banana Split (Vanilla, Chocolate, Strawberry) - Classic - ₹100
-  2. Cola Float With Ice-Cream - Classic - ₹110
-  3. Cold Coffee With Ice-Cream - Classic - ₹110
-  4. Chocolate (Rich chocolate ice cream) - Classic - ₹80
-  5. Fresh Lime Soda With Mint - Classic - ₹40
-  6. Fruit Salad With Ice Cream - Classic - ₹120
-  7. Hot Chocolate Fudge - Classic - ₹140
-  8. Orange Blossom Mocktail - Premium - ₹90
-  9. Pineapple Blossom Mocktail - Premium - ₹70
-  10. Special of the Day - Seasonal - ₹130
-  11. Tutti Frutti (Vanilla, Strawberry & Fresh Fruits) - Classic - ₹100
-  12. Vanilla With Hot Chocolate Sauce - Classic - ₹70
-  13. Vanilla (Classic vanilla ice cream) - Classic - ₹80
-- `seedDefaultFlavors` backend function that clears all flavors and seeds the 13 new ones
+- A prominent info banner at the top of the checkout dialog: "Advance payment required — party orders only."
+- Messaging below checkout buttons making it clear the payment is an advance for a party order.
 
 ### Modify
-- Backend: Add `seedDefaultFlavors` public shared function
-- Frontend AdminPage: On mount, if flavors is empty, auto-call seed function
-- Frontend: All product images point to new AI-generated images
+- Remove the Cash on Delivery tile entirely (the `cod` option and its button/logic).
+- Remove the fallback COD info block shown when no UPI/Razorpay is configured — instead show a message asking customer to contact the shop.
+- Default selected payment: when UPI is configured, default to `gpay` instead of `online` or `cod`.
+- When Razorpay key is not configured AND no UPI is set, block checkout with a "Contact us to place your order" message instead of COD fallback.
+- The `handlePayment` function's `cod` branch should be removed. If Razorpay key is missing, it should NOT fall back silently to COD — it should show an error asking to use UPI or contact the shop.
+- Update the `ConfirmedOrder.paymentMethod` type — `"cod"` can be removed or kept for legacy orders but no new COD orders should be created.
 
 ### Remove
-- All old 21 flavor product entries
+- Cash on Delivery tile (the wide green button with Truck icon below the payment grid).
+- The `!showUpiTiles && !showRazorpayTile` COD fallback block.
+- The `cod` case in `handlePayment`.
+- Razorpay "fall back to COD" silent path in `handlePayment`.
 
 ## Implementation Plan
-1. Update backend main.mo to add `seedDefaultFlavors` that clears and repopulates with the 13 new products with correct image paths
-2. Update frontend to call `seedDefaultFlavors` on admin load if flavor list is empty, OR add a seed button
-3. Also add a `replaceAllWithDefaults` call that can be triggered from admin to replace all existing flavors with the new 13
+1. In `CheckoutModal.tsx`:
+   - Remove `"cod"` from `PaymentMethod` type (or keep as dead type, but remove all UI and logic).
+   - Remove the COD tile button and the `isCod` variable usage from UI.
+   - Remove the `!showUpiTiles && !showRazorpayTile` fallback block; replace with a "Contact shop" message.
+   - Remove the `cod` branch from `handlePayment`.
+   - Remove the silent Razorpay fallback-to-COD path — instead show toast error directing to UPI.
+   - Add an info banner near the top of the dialog: party order + advance payment message.
+   - Default payment method: if UPI is available, default to `gpay`; if only Razorpay, default to `online`.
+   - Remove the `isCod` note below the action button.

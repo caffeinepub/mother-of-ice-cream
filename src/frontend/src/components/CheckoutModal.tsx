@@ -18,7 +18,6 @@ import {
   Loader2,
   MapPin,
   Phone,
-  Truck,
   User,
 } from "lucide-react";
 import { useState } from "react";
@@ -34,10 +33,10 @@ interface ConfirmedOrder {
   orderId: bigint;
   customerName: string;
   totalAmount: number;
-  paymentMethod: "online" | "cod";
+  paymentMethod: "online";
 }
 
-type PaymentMethod = "gpay" | "phonepe" | "online" | "cod";
+type PaymentMethod = "gpay" | "phonepe" | "online";
 
 declare global {
   interface Window {
@@ -129,7 +128,7 @@ export default function CheckoutModal({
   const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(
     null,
   );
-  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("online");
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("gpay");
   const [razorpayAvailable, setRazorpayAvailable] = useState<boolean | null>(
     null,
   );
@@ -165,9 +164,10 @@ export default function CheckoutModal({
     handleRazorpayKeyCheck().then((key) => {
       const available = !!key;
       setRazorpayAvailable(available);
-      if (!available && !upiId) {
-        setPaymentMethod("cod");
-      } else if (!available && upiId) {
+      // Always default to gpay when UPI is available, otherwise gpay still as default
+      if (!available && upiId) {
+        setPaymentMethod("gpay");
+      } else if (!available && !upiId) {
         setPaymentMethod("gpay");
       }
     });
@@ -182,7 +182,7 @@ export default function CheckoutModal({
         setAddress("");
         setErrors({});
         setRazorpayAvailable(null);
-        setPaymentMethod("online");
+        setPaymentMethod("gpay");
         setUpiStep("idle");
         setUtrInput("");
         setUtrError("");
@@ -299,50 +299,14 @@ export default function CheckoutModal({
     const snapshotAddress = address.trim();
 
     try {
-      if (paymentMethod === "cod") {
-        const orderId = await currentActor.placeOrder(
-          snapshotName,
-          snapshotPhone,
-          snapshotAddress,
-          cartItems,
-          snapshotTotal,
-          "",
-          "",
-        );
-        clearCart();
-        setConfirmedOrder({
-          orderId,
-          customerName: snapshotName,
-          totalAmount: snapshotTotal,
-          paymentMethod: "cod",
-        });
-        onOpenChange(false);
-        setIsPaying(false);
-        return;
-      }
-
       // Online payment path — fetch Razorpay key
       const razorpayKey = await currentActor.getRazorpayKeyId();
 
       if (!razorpayKey) {
-        // No Razorpay key configured — fall back to COD
-        const orderId = await currentActor.placeOrder(
-          snapshotName,
-          snapshotPhone,
-          snapshotAddress,
-          cartItems,
-          snapshotTotal,
-          "",
-          "",
+        // No Razorpay key configured — inform user to use UPI
+        toast.error(
+          "Please pay via Google Pay or PhonePe to place your order.",
         );
-        clearCart();
-        setConfirmedOrder({
-          orderId,
-          customerName: snapshotName,
-          totalAmount: snapshotTotal,
-          paymentMethod: "cod",
-        });
-        onOpenChange(false);
         setIsPaying(false);
         return;
       }
@@ -413,7 +377,6 @@ export default function CheckoutModal({
   const hasOnlinePayment = razorpayAvailable === true;
   const hasUpi = !!upiId;
   const isUpiMethod = paymentMethod === "gpay" || paymentMethod === "phonepe";
-  const isCod = paymentMethod === "cod";
   const isOnline = paymentMethod === "online";
 
   // Determine layout: how many payment tiles to show
@@ -435,6 +398,12 @@ export default function CheckoutModal({
               Checkout
             </DialogTitle>
           </DialogHeader>
+
+          {/* Party orders advance payment notice */}
+          <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm font-semibold text-amber-800">
+            🎉 Party Orders Only — Advance payment required to confirm your
+            booking
+          </div>
 
           {/* Payment Method Selection */}
           {(showUpiTiles || showRazorpayTile) && (
@@ -663,58 +632,22 @@ export default function CheckoutModal({
                       )}
                     </button>
                   )}
-
-                  {/* Cash on Delivery tile — always shown, in its own row if UPI+Razorpay fills the grid */}
                 </div>
-              )}
-
-              {/* COD tile — always shown separately below the payment grid */}
-              {!(isUpiMethod && upiStep === "confirm") && (
-                <button
-                  type="button"
-                  onClick={() => handleSelectPayment("cod")}
-                  className={`mt-3 w-full flex items-center justify-between gap-3 rounded-xl border-2 px-4 py-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
-                    isCod
-                      ? "border-emerald-500 bg-emerald-50/60 shadow-sm"
-                      : "border-border bg-muted/30 hover:border-emerald-400/60 hover:bg-muted/60"
-                  }`}
-                  aria-pressed={isCod}
-                  data-ocid="checkout.toggle"
-                >
-                  <div className="flex items-center gap-3">
-                    <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
-                      <Truck className="w-4 h-4 text-emerald-600" />
-                    </div>
-                    <div className="text-left">
-                      <p
-                        className={`font-bold text-sm ${
-                          isCod ? "text-emerald-700" : "text-foreground"
-                        }`}
-                      >
-                        Cash on Delivery
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Pay when delivered
-                      </p>
-                    </div>
-                  </div>
-                  {isCod && (
-                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
-                  )}
-                </button>
               )}
             </div>
           )}
 
-          {/* When neither UPI nor Razorpay configured — simple COD info */}
+          {/* When neither UPI nor Razorpay configured — contact notice */}
           {!showUpiTiles && !showRazorpayTile && (
-            <div className="rounded-xl border-2 border-green-200 bg-green-50/60 p-4 mb-1">
-              <p className="text-xs font-bold text-green-700 uppercase tracking-widest mb-1">
-                Cash on Delivery
-              </p>
-              <p className="text-sm text-green-800">
-                Pay when your order arrives at your door. No online payment
-                required.
+            <div className="rounded-xl border-2 border-amber-200 bg-amber-50/60 p-4 mb-1">
+              <p className="text-sm text-amber-800 font-semibold">
+                To place an order, please contact us at{" "}
+                <a
+                  href="tel:+919007819261"
+                  className="font-extrabold underline hover:no-underline"
+                >
+                  +91 9007819261
+                </a>
               </p>
             </div>
           )}
@@ -930,30 +863,20 @@ export default function CheckoutModal({
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Processing…
                   </>
-                ) : isOnline && hasOnlinePayment ? (
-                  <>🔒 Pay ₹{totalPrice.toFixed(0)} Now</>
                 ) : (
-                  <>
-                    <Truck className="mr-2 h-4 w-4" />
-                    Place Order (Pay on Delivery)
-                  </>
+                  <>🔒 Pay ₹{totalPrice.toFixed(0)} Now</>
                 )}
               </Button>
             )}
 
             {isUpiMethod && upiStep === "idle" && (
               <p className="text-center text-xs text-muted-foreground">
-                You'll be taken to your UPI app to complete payment
+                Advance payment confirms your party order booking
               </p>
             )}
             {isOnline && hasOnlinePayment && (
               <p className="text-center text-xs text-muted-foreground">
                 Secured by Razorpay
-              </p>
-            )}
-            {isCod && (
-              <p className="text-center text-xs text-muted-foreground">
-                Pay cash when delivered
               </p>
             )}
           </div>
