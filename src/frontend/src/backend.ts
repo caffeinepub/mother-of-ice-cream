@@ -105,6 +105,12 @@ export interface ContactMessage {
     message: string;
     timestamp: Time;
 }
+export interface OrderItem {
+    flavorId: bigint;
+    flavorName: string;
+    quantity: bigint;
+    price: number;
+}
 export interface IceCreamFlavor {
     id: bigint;
     name: string;
@@ -124,6 +130,18 @@ export interface IceCreamFlavorUpdate {
     category?: string;
     price?: number;
 }
+export interface Order {
+    id: bigint;
+    razorpayPaymentId: string;
+    customerName: string;
+    status: string;
+    deliveryAddress: string;
+    customerPhone: string;
+    razorpayOrderId: string;
+    totalAmount: number;
+    timestamp: Time;
+    items: Array<OrderItem>;
+}
 export interface UserProfile {
     name: string;
 }
@@ -136,7 +154,9 @@ export interface backendInterface {
     _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
     addFlavor(flavorInput: IceCreamFlavorInput): Promise<bigint>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    deleteContactMessage(timestamp: Time): Promise<void>;
     deleteFlavor(id: bigint): Promise<void>;
+    deleteOrder(id: bigint): Promise<void>;
     getAllContactMessages(): Promise<Array<ContactMessage>>;
     getAllFlavors(): Promise<Array<IceCreamFlavor>>;
     getAvailableFlavors(): Promise<Array<IceCreamFlavor>>;
@@ -145,14 +165,22 @@ export interface backendInterface {
     getFeaturedFlavors(): Promise<Array<IceCreamFlavor>>;
     getFlavor(id: bigint): Promise<IceCreamFlavor>;
     getFlavorsByCategory(category: string): Promise<Array<IceCreamFlavor>>;
+    getOrders(): Promise<Array<Order>>;
+    getOrdersByPhone(phone: string): Promise<Array<Order>>;
+    getRazorpayKeyId(): Promise<string | null>;
+    getUpiId(): Promise<string | null>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
+    placeOrder(customerName: string, customerPhone: string, deliveryAddress: string, items: Array<OrderItem>, totalAmount: number, razorpayOrderId: string, razorpayPaymentId: string): Promise<bigint>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     searchFlavors(searchTerm: string): Promise<Array<IceCreamFlavor>>;
+    setRazorpayKeyId(key: string): Promise<void>;
+    setUpiId(id: string): Promise<void>;
     submitContactMessage(name: string, email: string, message: string): Promise<void>;
     toggleAvailability(id: bigint): Promise<void>;
     toggleFeatured(id: bigint): Promise<void>;
     updateFlavor(id: bigint, input: IceCreamFlavorUpdate): Promise<void>;
+    updateOrderStatus(id: bigint, status: string): Promise<void>;
 }
 import type { IceCreamFlavor as _IceCreamFlavor, IceCreamFlavorInput as _IceCreamFlavorInput, IceCreamFlavorUpdate as _IceCreamFlavorUpdate, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
@@ -199,6 +227,20 @@ export class Backend implements backendInterface {
             return result;
         }
     }
+    async deleteContactMessage(arg0: Time): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteContactMessage(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteContactMessage(arg0);
+            return result;
+        }
+    }
     async deleteFlavor(arg0: bigint): Promise<void> {
         if (this.processError) {
             try {
@@ -210,6 +252,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.deleteFlavor(arg0);
+            return result;
+        }
+    }
+    async deleteOrder(arg0: bigint): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.deleteOrder(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.deleteOrder(arg0);
             return result;
         }
     }
@@ -325,6 +381,62 @@ export class Backend implements backendInterface {
             return from_candid_vec_n5(this._uploadFile, this._downloadFile, result);
         }
     }
+    async getOrders(): Promise<Array<Order>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getOrders();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getOrders();
+            return result;
+        }
+    }
+    async getOrdersByPhone(arg0: string): Promise<Array<Order>> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getOrdersByPhone(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getOrdersByPhone(arg0);
+            return result;
+        }
+    }
+    async getRazorpayKeyId(): Promise<string | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getRazorpayKeyId();
+                return from_candid_opt_n8(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getRazorpayKeyId();
+            return from_candid_opt_n8(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async getUpiId(): Promise<string | null> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.getUpiId();
+                return from_candid_opt_n8(this._uploadFile, this._downloadFile, result);
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.getUpiId();
+            return from_candid_opt_n8(this._uploadFile, this._downloadFile, result);
+        }
+    }
     async getUserProfile(arg0: Principal): Promise<UserProfile | null> {
         if (this.processError) {
             try {
@@ -350,6 +462,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.isCallerAdmin();
+            return result;
+        }
+    }
+    async placeOrder(arg0: string, arg1: string, arg2: string, arg3: Array<OrderItem>, arg4: number, arg5: string, arg6: string): Promise<bigint> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.placeOrder(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.placeOrder(arg0, arg1, arg2, arg3, arg4, arg5, arg6);
             return result;
         }
     }
@@ -379,6 +505,34 @@ export class Backend implements backendInterface {
         } else {
             const result = await this.actor.searchFlavors(arg0);
             return from_candid_vec_n5(this._uploadFile, this._downloadFile, result);
+        }
+    }
+    async setRazorpayKeyId(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.setRazorpayKeyId(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.setRazorpayKeyId(arg0);
+            return result;
+        }
+    }
+    async setUpiId(arg0: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.setUpiId(arg0);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.setUpiId(arg0);
+            return result;
         }
     }
     async submitContactMessage(arg0: string, arg1: string, arg2: string): Promise<void> {
@@ -434,6 +588,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.updateFlavor(arg0, to_candid_IceCreamFlavorUpdate_n12(this._uploadFile, this._downloadFile, arg1));
+            return result;
+        }
+    }
+    async updateOrderStatus(arg0: bigint, arg1: string): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.updateOrderStatus(arg0, arg1);
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.updateOrderStatus(arg0, arg1);
             return result;
         }
     }

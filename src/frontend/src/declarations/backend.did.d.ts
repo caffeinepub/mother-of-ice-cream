@@ -44,23 +44,23 @@ export interface IceCreamFlavorUpdate {
   'category' : [] | [string],
   'price' : [] | [number],
 }
+export interface Order {
+  'id' : bigint,
+  'razorpayPaymentId' : string,
+  'customerName' : string,
+  'status' : string,
+  'deliveryAddress' : string,
+  'customerPhone' : string,
+  'razorpayOrderId' : string,
+  'totalAmount' : number,
+  'timestamp' : Time,
+  'items' : Array<OrderItem>,
+}
 export interface OrderItem {
   'flavorId' : bigint,
   'flavorName' : string,
   'quantity' : bigint,
   'price' : number,
-}
-export interface Order {
-  'id' : bigint,
-  'customerName' : string,
-  'customerPhone' : string,
-  'deliveryAddress' : string,
-  'items' : Array<OrderItem>,
-  'totalAmount' : number,
-  'status' : string,
-  'timestamp' : Time,
-  'razorpayOrderId' : string,
-  'razorpayPaymentId' : string,
 }
 export type Time = bigint;
 export interface UserProfile { 'name' : string }
@@ -71,7 +71,9 @@ export interface _SERVICE {
   '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'addFlavor' : ActorMethod<[IceCreamFlavorInput], bigint>,
   'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
+  'deleteContactMessage' : ActorMethod<[Time], undefined>,
   'deleteFlavor' : ActorMethod<[bigint], undefined>,
+  'deleteOrder' : ActorMethod<[bigint], undefined>,
   'getAllContactMessages' : ActorMethod<[], Array<ContactMessage>>,
   'getAllFlavors' : ActorMethod<[], Array<IceCreamFlavor>>,
   'getAvailableFlavors' : ActorMethod<[], Array<IceCreamFlavor>>,
@@ -83,12 +85,17 @@ export interface _SERVICE {
   'getOrders' : ActorMethod<[], Array<Order>>,
   'getOrdersByPhone' : ActorMethod<[string], Array<Order>>,
   'getRazorpayKeyId' : ActorMethod<[], [] | [string]>,
+  'getUpiId' : ActorMethod<[], [] | [string]>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
-  'placeOrder' : ActorMethod<[string, string, string, Array<OrderItem>, number, string, string], bigint>,
+  'placeOrder' : ActorMethod<
+    [string, string, string, Array<OrderItem>, number, string, string],
+    bigint
+  >,
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'searchFlavors' : ActorMethod<[string], Array<IceCreamFlavor>>,
   'setRazorpayKeyId' : ActorMethod<[string], undefined>,
+  'setUpiId' : ActorMethod<[string], undefined>,
   'submitContactMessage' : ActorMethod<[string, string, string], undefined>,
   'toggleAvailability' : ActorMethod<[bigint], undefined>,
   'toggleFeatured' : ActorMethod<[bigint], undefined>,

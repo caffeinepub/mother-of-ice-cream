@@ -1,3 +1,4 @@
+import Migration "migration";
 import Map "mo:core/Map";
 import Text "mo:core/Text";
 import Nat "mo:core/Nat";
@@ -11,6 +12,7 @@ import Principal "mo:core/Principal";
 import MixinAuthorization "authorization/MixinAuthorization";
 import AccessControl "authorization/access-control";
 
+(with migration = Migration.run)
 actor {
   // Authorization
   let accessControlState = AccessControl.initState();
@@ -89,7 +91,7 @@ actor {
   };
 
   // State
-  var nextId = 1;
+  var nextId = 22;
   var nextOrderId = 1;
   var razorpayKeyId : ?Text = null;
   var upiId : ?Text = null;
@@ -315,7 +317,6 @@ actor {
 
   for (flavor in sampleFlavors.values()) {
     flavors.add(flavor.id, flavor);
-    nextId += 1;
   };
 
   // Helper function
@@ -348,7 +349,7 @@ actor {
     userProfiles.add(caller, profile);
   };
 
-  // Public Functions
+  // Public Functions - No authentication required (guests can access)
   public query func getAllFlavors() : async [IceCreamFlavor] {
     flavors.values().toArray().sort(IceCreamFlavor.compareByName);
   };
@@ -376,8 +377,11 @@ actor {
     getFlavorInternal(id);
   };
 
-  // Admin Functions (no login required)
-  public shared func addFlavor(flavorInput : IceCreamFlavorInput) : async Nat {
+  // Admin Functions - Require admin role
+  public shared ({ caller }) func addFlavor(flavorInput : IceCreamFlavorInput) : async Nat {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can add flavors");
+    };
     let flavor : IceCreamFlavor = {
       flavorInput with
       id = nextId;
@@ -387,7 +391,10 @@ actor {
     flavor.id;
   };
 
-  public shared func updateFlavor(id : Nat, input : IceCreamFlavorUpdate) : async () {
+  public shared ({ caller }) func updateFlavor(id : Nat, input : IceCreamFlavorUpdate) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can update flavors");
+    };
     let flavor = getFlavorInternal(id);
     let updatedFlavor : IceCreamFlavor = {
       id = flavor.id;
@@ -423,14 +430,20 @@ actor {
     flavors.add(id, updatedFlavor);
   };
 
-  public shared func deleteFlavor(id : Nat) : async () {
+  public shared ({ caller }) func deleteFlavor(id : Nat) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can delete flavors");
+    };
     if (not flavors.containsKey(id)) {
       Runtime.trap("Flavor not found");
     };
     flavors.remove(id);
   };
 
-  public shared func toggleAvailability(id : Nat) : async () {
+  public shared ({ caller }) func toggleAvailability(id : Nat) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can toggle availability");
+    };
     let flavor = getFlavorInternal(id);
     let updatedFlavor : IceCreamFlavor = {
       flavor with
@@ -439,7 +452,10 @@ actor {
     flavors.add(id, updatedFlavor);
   };
 
-  public shared func toggleFeatured(id : Nat) : async () {
+  public shared ({ caller }) func toggleFeatured(id : Nat) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can toggle featured status");
+    };
     let flavor = getFlavorInternal(id);
     let updatedFlavor : IceCreamFlavor = {
       flavor with
@@ -448,7 +464,7 @@ actor {
     flavors.add(id, updatedFlavor);
   };
 
-  // Contact Messages
+  // Contact Messages - Submit is public, view/delete is admin-only
   public shared (_) func submitContactMessage(name : Text, email : Text, message : Text) : async () {
     let contactMessage : ContactMessage = {
       name;
@@ -459,17 +475,24 @@ actor {
     contactMessages.add(contactMessage);
   };
 
-  public query func getAllContactMessages() : async [ContactMessage] {
+  public query ({ caller }) func getAllContactMessages() : async [ContactMessage] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can view contact messages");
+    };
     contactMessages.toArray();
   };
 
-  public shared func deleteContactMessage(timestamp : Time.Time) : async () {
+  public shared ({ caller }) func deleteContactMessage(timestamp : Time.Time) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can delete contact messages");
+    };
     let remaining = contactMessages.filter(func(m : ContactMessage) : Bool { m.timestamp != timestamp });
     contactMessages.clear();
     contactMessages.addAll(remaining.values());
   };
 
   // Order Functions
+  // placeOrder is public (no auth required for customers)
   public shared (_) func placeOrder(
     customerName : Text,
     customerPhone : Text,
@@ -496,15 +519,24 @@ actor {
     order.id;
   };
 
-  public query func getOrders() : async [Order] {
+  // getOrders is admin-only (contains all customer data)
+  public query ({ caller }) func getOrders() : async [Order] {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can view all orders");
+    };
     orders.values().toArray();
   };
 
+  // getOrdersByPhone is public (customers can check their own orders)
   public query func getOrdersByPhone(phone : Text) : async [Order] {
     orders.values().toArray().filter(func(o) { o.customerPhone == phone });
   };
 
-  public shared func updateOrderStatus(id : Nat, status : Text) : async () {
+  // updateOrderStatus is admin-only
+  public shared ({ caller }) func updateOrderStatus(id : Nat, status : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can update order status");
+    };
     switch (orders.get(id)) {
       case (null) { Runtime.trap("Order not found") };
       case (?order) {
@@ -514,27 +546,39 @@ actor {
     };
   };
 
-  public shared func deleteOrder(id : Nat) : async () {
+  // deleteOrder is admin-only
+  public shared ({ caller }) func deleteOrder(id : Nat) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can delete orders");
+    };
     if (not orders.containsKey(id)) {
       Runtime.trap("Order not found");
     };
     orders.remove(id);
   };
 
-  // Razorpay Key Management
-  public shared func setRazorpayKeyId(key : Text) : async () {
+  // Razorpay Key Management - Admin-only
+  public shared ({ caller }) func setRazorpayKeyId(key : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can set Razorpay key");
+    };
     razorpayKeyId := ?key;
   };
 
+  // getRazorpayKeyId is public (needed by frontend for payment integration)
   public query func getRazorpayKeyId() : async ?Text {
     razorpayKeyId;
   };
 
-  // UPI ID Management (Google Pay / PhonePe direct payments)
-  public shared func setUpiId(id : Text) : async () {
+  // UPI ID Management - Admin-only
+  public shared ({ caller }) func setUpiId(id : Text) : async () {
+    if (not (AccessControl.hasPermission(accessControlState, caller, #admin))) {
+      Runtime.trap("Unauthorized: Only admins can set UPI ID");
+    };
     upiId := ?id;
   };
 
+  // getUpiId is public (needed by frontend for payment integration)
   public query func getUpiId() : async ?Text {
     upiId;
   };

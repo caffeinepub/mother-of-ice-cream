@@ -117,7 +117,8 @@ export default function CheckoutModal({
   const { actor, isFetching } = useActor();
   const { data: upiId } = useGetUpiId();
 
-  // Derived actor connection states
+  // isConnecting = still loading actor; if isFetching is false but actor is null,
+  // the connection attempt is done (failed or not configured) — do NOT block the button.
   const isConnecting = isFetching && !actor;
 
   const [name, setName] = useState("");
@@ -151,10 +152,9 @@ export default function CheckoutModal({
   async function handleRazorpayKeyCheck(): Promise<string | null> {
     if (!actor) return null;
     try {
-      const keyResult = await (actor as any).getRazorpayKeyId();
-      return Array.isArray(keyResult) && keyResult.length > 0
-        ? keyResult[0]
-        : null;
+      const keyResult = await actor.getRazorpayKeyId();
+      // getRazorpayKeyId returns string | null directly
+      return keyResult ?? null;
     } catch {
       return null;
     }
@@ -232,7 +232,7 @@ export default function CheckoutModal({
     setErrors({});
 
     if (!actor) {
-      toast.error("Not connected. Please refresh and try again.");
+      toast.error("Connection issue — please refresh the page and try again.");
       return;
     }
 
@@ -245,7 +245,7 @@ export default function CheckoutModal({
     }));
 
     try {
-      const orderId = await (actor as any).placeOrder(
+      const orderId = await actor.placeOrder(
         name.trim(),
         phone.trim(),
         address.trim(),
@@ -280,7 +280,7 @@ export default function CheckoutModal({
     setErrors({});
 
     if (!actor) {
-      toast.error("Not connected. Please refresh and try again.");
+      toast.error("Connection issue — please refresh the page and try again.");
       return;
     }
 
@@ -300,7 +300,7 @@ export default function CheckoutModal({
 
     try {
       if (paymentMethod === "cod") {
-        const orderId = await (currentActor as any).placeOrder(
+        const orderId = await currentActor.placeOrder(
           snapshotName,
           snapshotPhone,
           snapshotAddress,
@@ -322,12 +322,11 @@ export default function CheckoutModal({
       }
 
       // Online payment path — fetch Razorpay key
-      const keyResult = await (currentActor as any).getRazorpayKeyId();
-      const razorpayKey: string | null =
-        Array.isArray(keyResult) && keyResult.length > 0 ? keyResult[0] : null;
+      const razorpayKey = await currentActor.getRazorpayKeyId();
 
       if (!razorpayKey) {
-        const orderId = await (currentActor as any).placeOrder(
+        // No Razorpay key configured — fall back to COD
+        const orderId = await currentActor.placeOrder(
           snapshotName,
           snapshotPhone,
           snapshotAddress,
@@ -369,7 +368,7 @@ export default function CheckoutModal({
         theme: { color: "#FF4FA3" },
         handler: async (response: RazorpayResponse) => {
           try {
-            const orderId = await (currentActor as any).placeOrder(
+            const orderId = await currentActor.placeOrder(
               snapshotName,
               snapshotPhone,
               snapshotAddress,

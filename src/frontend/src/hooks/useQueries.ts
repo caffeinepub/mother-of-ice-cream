@@ -210,7 +210,7 @@ export function usePlaceOrder() {
       razorpayPaymentId: string;
     }) => {
       if (!actor) throw new Error("Not connected");
-      return (actor as any).placeOrder(
+      return actor.placeOrder(
         customerName,
         customerPhone,
         deliveryAddress,
@@ -232,7 +232,7 @@ export function useGetOrders() {
     queryKey: ["orders"],
     queryFn: async () => {
       if (!actor) return [];
-      return (actor as any).getOrders();
+      return actor.getOrders();
     },
     enabled: !!actor && !isFetching,
   });
@@ -244,8 +244,9 @@ export function useGetRazorpayKey() {
     queryKey: ["razorpayKey"],
     queryFn: async () => {
       if (!actor) return null;
-      const result = await (actor as any).getRazorpayKeyId();
-      return Array.isArray(result) && result.length > 0 ? result[0] : null;
+      const result = await actor.getRazorpayKeyId();
+      // getRazorpayKeyId returns string | null directly
+      return result ?? null;
     },
     enabled: !!actor && !isFetching,
   });
@@ -257,7 +258,7 @@ export function useSetRazorpayKey() {
   return useMutation({
     mutationFn: async (key: string) => {
       if (!actor) throw new Error("Not connected");
-      return (actor as any).setRazorpayKeyId(key);
+      return actor.setRazorpayKeyId(key);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["razorpayKey"] });
@@ -271,7 +272,7 @@ export function useUpdateOrderStatus() {
   return useMutation({
     mutationFn: async ({ id, status }: { id: bigint; status: string }) => {
       if (!actor) throw new Error("Not connected");
-      return (actor as any).updateOrderStatus(id, status);
+      return actor.updateOrderStatus(id, status);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
@@ -285,7 +286,7 @@ export function useDeleteOrder() {
   return useMutation({
     mutationFn: async (id: bigint) => {
       if (!actor) throw new Error("Not connected");
-      return (actor as any).deleteOrder(id);
+      return actor.deleteOrder(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["orders"] });
@@ -299,7 +300,7 @@ export function useDeleteContactMessage() {
   return useMutation({
     mutationFn: async (timestamp: bigint) => {
       if (!actor) throw new Error("Not connected");
-      return (actor as any).deleteContactMessage(timestamp);
+      return actor.deleteContactMessage(timestamp);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["contactMessages"] });
@@ -313,8 +314,7 @@ export function useGetUpiId() {
     queryKey: ["upiId"],
     queryFn: async () => {
       if (!actor) return null;
-      const result = await (actor as any).getUpiId();
-      return Array.isArray(result) && result.length > 0 ? result[0] : null;
+      return actor.getUpiId();
     },
     enabled: !!actor && !isFetching,
   });
@@ -326,7 +326,7 @@ export function useSetUpiId() {
   return useMutation({
     mutationFn: async (id: string) => {
       if (!actor) throw new Error("Not connected");
-      return (actor as any).setUpiId(id);
+      return actor.setUpiId(id);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ["upiId"] });

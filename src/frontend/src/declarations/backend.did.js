@@ -40,6 +40,24 @@ export const IceCreamFlavor = IDL.Record({
   'price' : IDL.Float64,
 });
 export const UserProfile = IDL.Record({ 'name' : IDL.Text });
+export const OrderItem = IDL.Record({
+  'flavorId' : IDL.Nat,
+  'flavorName' : IDL.Text,
+  'quantity' : IDL.Nat,
+  'price' : IDL.Float64,
+});
+export const Order = IDL.Record({
+  'id' : IDL.Nat,
+  'razorpayPaymentId' : IDL.Text,
+  'customerName' : IDL.Text,
+  'status' : IDL.Text,
+  'deliveryAddress' : IDL.Text,
+  'customerPhone' : IDL.Text,
+  'razorpayOrderId' : IDL.Text,
+  'totalAmount' : IDL.Float64,
+  'timestamp' : Time,
+  'items' : IDL.Vec(OrderItem),
+});
 export const IceCreamFlavorUpdate = IDL.Record({
   'name' : IDL.Opt(IDL.Text),
   'isAvailable' : IDL.Opt(IDL.Bool),
@@ -54,7 +72,9 @@ export const idlService = IDL.Service({
   '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
   'addFlavor' : IDL.Func([IceCreamFlavorInput], [IDL.Nat], []),
   'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+  'deleteContactMessage' : IDL.Func([Time], [], []),
   'deleteFlavor' : IDL.Func([IDL.Nat], [], []),
+  'deleteOrder' : IDL.Func([IDL.Nat], [], []),
   'getAllContactMessages' : IDL.Func([], [IDL.Vec(ContactMessage)], ['query']),
   'getAllFlavors' : IDL.Func([], [IDL.Vec(IceCreamFlavor)], ['query']),
   'getAvailableFlavors' : IDL.Func([], [IDL.Vec(IceCreamFlavor)], ['query']),
@@ -67,18 +87,38 @@ export const idlService = IDL.Service({
       [IDL.Vec(IceCreamFlavor)],
       ['query'],
     ),
+  'getOrders' : IDL.Func([], [IDL.Vec(Order)], ['query']),
+  'getOrdersByPhone' : IDL.Func([IDL.Text], [IDL.Vec(Order)], ['query']),
+  'getRazorpayKeyId' : IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
+  'getUpiId' : IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
   'getUserProfile' : IDL.Func(
       [IDL.Principal],
       [IDL.Opt(UserProfile)],
       ['query'],
     ),
   'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+  'placeOrder' : IDL.Func(
+      [
+        IDL.Text,
+        IDL.Text,
+        IDL.Text,
+        IDL.Vec(OrderItem),
+        IDL.Float64,
+        IDL.Text,
+        IDL.Text,
+      ],
+      [IDL.Nat],
+      [],
+    ),
   'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
   'searchFlavors' : IDL.Func([IDL.Text], [IDL.Vec(IceCreamFlavor)], ['query']),
+  'setRazorpayKeyId' : IDL.Func([IDL.Text], [], []),
+  'setUpiId' : IDL.Func([IDL.Text], [], []),
   'submitContactMessage' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
   'toggleAvailability' : IDL.Func([IDL.Nat], [], []),
   'toggleFeatured' : IDL.Func([IDL.Nat], [], []),
   'updateFlavor' : IDL.Func([IDL.Nat, IceCreamFlavorUpdate], [], []),
+  'updateOrderStatus' : IDL.Func([IDL.Nat, IDL.Text], [], []),
 });
 
 export const idlInitArgs = [];
@@ -116,6 +156,24 @@ export const idlFactory = ({ IDL }) => {
     'price' : IDL.Float64,
   });
   const UserProfile = IDL.Record({ 'name' : IDL.Text });
+  const OrderItem = IDL.Record({
+    'flavorId' : IDL.Nat,
+    'flavorName' : IDL.Text,
+    'quantity' : IDL.Nat,
+    'price' : IDL.Float64,
+  });
+  const Order = IDL.Record({
+    'id' : IDL.Nat,
+    'razorpayPaymentId' : IDL.Text,
+    'customerName' : IDL.Text,
+    'status' : IDL.Text,
+    'deliveryAddress' : IDL.Text,
+    'customerPhone' : IDL.Text,
+    'razorpayOrderId' : IDL.Text,
+    'totalAmount' : IDL.Float64,
+    'timestamp' : Time,
+    'items' : IDL.Vec(OrderItem),
+  });
   const IceCreamFlavorUpdate = IDL.Record({
     'name' : IDL.Opt(IDL.Text),
     'isAvailable' : IDL.Opt(IDL.Bool),
@@ -130,7 +188,9 @@ export const idlFactory = ({ IDL }) => {
     '_initializeAccessControlWithSecret' : IDL.Func([IDL.Text], [], []),
     'addFlavor' : IDL.Func([IceCreamFlavorInput], [IDL.Nat], []),
     'assignCallerUserRole' : IDL.Func([IDL.Principal, UserRole], [], []),
+    'deleteContactMessage' : IDL.Func([Time], [], []),
     'deleteFlavor' : IDL.Func([IDL.Nat], [], []),
+    'deleteOrder' : IDL.Func([IDL.Nat], [], []),
     'getAllContactMessages' : IDL.Func(
         [],
         [IDL.Vec(ContactMessage)],
@@ -147,22 +207,42 @@ export const idlFactory = ({ IDL }) => {
         [IDL.Vec(IceCreamFlavor)],
         ['query'],
       ),
+    'getOrders' : IDL.Func([], [IDL.Vec(Order)], ['query']),
+    'getOrdersByPhone' : IDL.Func([IDL.Text], [IDL.Vec(Order)], ['query']),
+    'getRazorpayKeyId' : IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
+    'getUpiId' : IDL.Func([], [IDL.Opt(IDL.Text)], ['query']),
     'getUserProfile' : IDL.Func(
         [IDL.Principal],
         [IDL.Opt(UserProfile)],
         ['query'],
       ),
     'isCallerAdmin' : IDL.Func([], [IDL.Bool], ['query']),
+    'placeOrder' : IDL.Func(
+        [
+          IDL.Text,
+          IDL.Text,
+          IDL.Text,
+          IDL.Vec(OrderItem),
+          IDL.Float64,
+          IDL.Text,
+          IDL.Text,
+        ],
+        [IDL.Nat],
+        [],
+      ),
     'saveCallerUserProfile' : IDL.Func([UserProfile], [], []),
     'searchFlavors' : IDL.Func(
         [IDL.Text],
         [IDL.Vec(IceCreamFlavor)],
         ['query'],
       ),
+    'setRazorpayKeyId' : IDL.Func([IDL.Text], [], []),
+    'setUpiId' : IDL.Func([IDL.Text], [], []),
     'submitContactMessage' : IDL.Func([IDL.Text, IDL.Text, IDL.Text], [], []),
     'toggleAvailability' : IDL.Func([IDL.Nat], [], []),
     'toggleFeatured' : IDL.Func([IDL.Nat], [], []),
     'updateFlavor' : IDL.Func([IDL.Nat, IceCreamFlavorUpdate], [], []),
+    'updateOrderStatus' : IDL.Func([IDL.Nat, IDL.Text], [], []),
   });
 };
 

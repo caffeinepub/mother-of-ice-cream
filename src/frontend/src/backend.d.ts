@@ -23,6 +23,12 @@ export interface ContactMessage {
     message: string;
     timestamp: Time;
 }
+export interface OrderItem {
+    flavorId: bigint;
+    flavorName: string;
+    quantity: bigint;
+    price: number;
+}
 export interface IceCreamFlavor {
     id: bigint;
     name: string;
@@ -42,6 +48,18 @@ export interface IceCreamFlavorUpdate {
     category?: string;
     price?: number;
 }
+export interface Order {
+    id: bigint;
+    razorpayPaymentId: string;
+    customerName: string;
+    status: string;
+    deliveryAddress: string;
+    customerPhone: string;
+    razorpayOrderId: string;
+    totalAmount: number;
+    timestamp: Time;
+    items: Array<OrderItem>;
+}
 export interface UserProfile {
     name: string;
 }
@@ -53,7 +71,9 @@ export enum UserRole {
 export interface backendInterface {
     addFlavor(flavorInput: IceCreamFlavorInput): Promise<bigint>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
+    deleteContactMessage(timestamp: Time): Promise<void>;
     deleteFlavor(id: bigint): Promise<void>;
+    deleteOrder(id: bigint): Promise<void>;
     getAllContactMessages(): Promise<Array<ContactMessage>>;
     getAllFlavors(): Promise<Array<IceCreamFlavor>>;
     getAvailableFlavors(): Promise<Array<IceCreamFlavor>>;
@@ -62,12 +82,20 @@ export interface backendInterface {
     getFeaturedFlavors(): Promise<Array<IceCreamFlavor>>;
     getFlavor(id: bigint): Promise<IceCreamFlavor>;
     getFlavorsByCategory(category: string): Promise<Array<IceCreamFlavor>>;
+    getOrders(): Promise<Array<Order>>;
+    getOrdersByPhone(phone: string): Promise<Array<Order>>;
+    getRazorpayKeyId(): Promise<string | null>;
+    getUpiId(): Promise<string | null>;
     getUserProfile(user: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
+    placeOrder(customerName: string, customerPhone: string, deliveryAddress: string, items: Array<OrderItem>, totalAmount: number, razorpayOrderId: string, razorpayPaymentId: string): Promise<bigint>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     searchFlavors(searchTerm: string): Promise<Array<IceCreamFlavor>>;
+    setRazorpayKeyId(key: string): Promise<void>;
+    setUpiId(id: string): Promise<void>;
     submitContactMessage(name: string, email: string, message: string): Promise<void>;
     toggleAvailability(id: bigint): Promise<void>;
     toggleFeatured(id: bigint): Promise<void>;
     updateFlavor(id: bigint, input: IceCreamFlavorUpdate): Promise<void>;
+    updateOrderStatus(id: bigint, status: string): Promise<void>;
 }
