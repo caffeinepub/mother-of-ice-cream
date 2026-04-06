@@ -257,6 +257,47 @@ actor {
     nextId := 1;
   };
 
+  public shared func seedDefaultFlavors() : async () {
+    // Clear all existing flavors
+    let ids = flavors.keys().toArray();
+    for (id in ids.values()) {
+      flavors.remove(id);
+    };
+    nextId := 1;
+
+    // Seed 13 new products
+    let defaults : [(Text, Text, Float, Text, ?Text)] = [
+      ("Banana Split", "VANILLA, CHOCOLATE, STRAWBERRY", 100.0, "Classic", ?"/assets/generated/banana-split.dim_600x600.jpg"),
+      ("Cola Float", "WITH ICE-CREAM", 110.0, "Classic", ?"/assets/generated/cola-float.dim_600x600.jpg"),
+      ("Cold Coffee", "With ICE-CREAM", 110.0, "Classic", ?"/assets/generated/cold-coffee-icecream.dim_600x600.jpg"),
+      ("Chocolate", "Rich chocolate ice cream.", 80.0, "Classic", ?"/assets/generated/chocolate-icecream.dim_600x600.jpg"),
+      ("Fresh Lime", "SODA WITH MINT", 40.0, "Classic", ?"/assets/generated/fresh-lime-soda.dim_600x600.jpg"),
+      ("Fruit Salad", "With ice cream", 120.0, "Classic", ?"/assets/generated/fruit-salad-icecream.dim_600x600.jpg"),
+      ("Hot Chocolate Fudge", "Rich hot chocolate fudge sundae.", 140.0, "Classic", ?"/assets/generated/hot-chocolate-fudge.dim_600x600.jpg"),
+      ("Orange Blossom Mocktail", "Refreshing orange blossom mocktail.", 90.0, "Premium", ?"/assets/generated/orange-blossom-mocktail.dim_600x600.jpg"),
+      ("Pineapple Blossom Mocktail", "Tropical pineapple blossom mocktail.", 70.0, "Premium", ?"/assets/generated/pineapple-blossom-mocktail.dim_600x600.jpg"),
+      ("Special of the Day", "Our chef\'s seasonal creation — a limited-edition scoop made with the freshest ingredients of the season.", 130.0, "Seasonal", ?"/assets/generated/special-of-the-day.dim_600x600.jpg"),
+      ("Tutti Frutti", "VANILLA, Strawberry & Fresh Fruits", 100.0, "Classic", ?"/assets/generated/tutti-frutti.dim_600x600.jpg"),
+      ("Vanilla with Hot Chocolate Sauce", "WITH HOT CHOCOLATE SAUCE", 70.0, "Classic", ?"/assets/generated/vanilla-hot-choco-sauce.dim_600x600.jpg"),
+      ("Vanilla", "Classic vanilla ice cream.", 80.0, "Classic", ?"/assets/generated/vanilla-classic.dim_600x600.jpg"),
+    ];
+
+    for ((name, description, price, category, imageUrl) in defaults.values()) {
+      let flavor : IceCreamFlavor = {
+        id = nextId;
+        name;
+        description;
+        price;
+        category;
+        imageUrl;
+        isAvailable = true;
+        isFeatured = true;
+      };
+      flavors.add(nextId, flavor);
+      nextId += 1;
+    };
+  };
+
   public shared func toggleAvailability(id : Nat) : async () {
     let flavor = getFlavorInternal(id);
     let updatedFlavor : IceCreamFlavor = {

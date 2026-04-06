@@ -70,6 +70,8 @@ export enum UserRole {
 }
 export interface backendInterface {
     addFlavor(flavorInput: IceCreamFlavorInput): Promise<bigint>;
+    clearAllFlavors(): Promise<void>;
+    seedDefaultFlavors(): Promise<void>;
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     deleteContactMessage(timestamp: Time): Promise<void>;
     deleteFlavor(id: bigint): Promise<void>;

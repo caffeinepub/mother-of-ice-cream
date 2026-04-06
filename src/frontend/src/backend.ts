@@ -156,6 +156,7 @@ export interface backendInterface {
     assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
     deleteContactMessage(timestamp: Time): Promise<void>;
     clearAllFlavors(): Promise<void>;
+    seedDefaultFlavors(): Promise<void>;
     deleteFlavor(id: bigint): Promise<void>;
     deleteOrder(id: bigint): Promise<void>;
     getAllContactMessages(): Promise<Array<ContactMessage>>;
@@ -253,6 +254,20 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.clearAllFlavors();
+            return result;
+        }
+    }
+    async seedDefaultFlavors(): Promise<void> {
+        if (this.processError) {
+            try {
+                const result = await this.actor.seedDefaultFlavors();
+                return result;
+            } catch (e) {
+                this.processError(e);
+                throw new Error("unreachable");
+            }
+        } else {
+            const result = await this.actor.seedDefaultFlavors();
             return result;
         }
     }

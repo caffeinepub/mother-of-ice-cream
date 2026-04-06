@@ -1,23 +1,36 @@
 # Mother of Ice-cream
 
 ## Current State
-The backend seeds 21 hardcoded ice cream flavors on first deploy. These are stored in stable storage and persist across upgrades. The admin panel lets the user add/edit/delete individual flavors but has no way to bulk-clear all existing ones.
+The app has stable backend storage for flavors. The old 21 flavors were stored in stable maps. There's a `clearAllFlavors` function and individual `addFlavor` calls. All products use AI-generated images. The admin panel has full CRUD for flavors.
 
 ## Requested Changes (Diff)
 
 ### Add
-- `clearAllFlavors` public function to backend that removes all flavors from the map
-- A "Clear All Flavors" button in the Admin panel → Flavors tab that calls this function (with confirmation dialog)
-- Remove the 21-flavor seed block from the backend so future clean deploys start empty
+- 13 new products with AI-generated images replacing all old ones:
+  1. Banana Split (Vanilla, Chocolate, Strawberry) - Classic - ₹100
+  2. Cola Float With Ice-Cream - Classic - ₹110
+  3. Cold Coffee With Ice-Cream - Classic - ₹110
+  4. Chocolate (Rich chocolate ice cream) - Classic - ₹80
+  5. Fresh Lime Soda With Mint - Classic - ₹40
+  6. Fruit Salad With Ice Cream - Classic - ₹120
+  7. Hot Chocolate Fudge - Classic - ₹140
+  8. Orange Blossom Mocktail - Premium - ₹90
+  9. Pineapple Blossom Mocktail - Premium - ₹70
+  10. Special of the Day - Seasonal - ₹130
+  11. Tutti Frutti (Vanilla, Strawberry & Fresh Fruits) - Classic - ₹100
+  12. Vanilla With Hot Chocolate Sauce - Classic - ₹70
+  13. Vanilla (Classic vanilla ice cream) - Classic - ₹80
+- `seedDefaultFlavors` backend function that clears all flavors and seeds the 13 new ones
 
 ### Modify
-- Backend: Remove the `if (flavors.size() == 0)` seed block entirely
-- AdminPage: Add a danger "Clear All Flavors" button in the Flavors tab header area
+- Backend: Add `seedDefaultFlavors` public shared function
+- Frontend AdminPage: On mount, if flavors is empty, auto-call seed function
+- Frontend: All product images point to new AI-generated images
 
 ### Remove
-- The 21-flavor hardcoded seed data from main.mo
+- All old 21 flavor product entries
 
 ## Implementation Plan
-1. Edit `src/backend/main.mo`: remove the seed block and add `clearAllFlavors()` function
-2. Update `src/frontend/src/declarations/backend.did.d.ts` and `backend.did.js` to include `clearAllFlavors`
-3. Edit `src/frontend/src/pages/AdminPage.tsx`: add a hook call for `clearAllFlavors`, add a "Clear All Flavors" button with confirmation dialog in the Flavors tab
+1. Update backend main.mo to add `seedDefaultFlavors` that clears and repopulates with the 13 new products with correct image paths
+2. Update frontend to call `seedDefaultFlavors` on admin load if flavor list is empty, OR add a seed button
+3. Also add a `replaceAllWithDefaults` call that can be triggered from admin to replace all existing flavors with the new 13
