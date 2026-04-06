@@ -176,20 +176,6 @@ export function useClearAllFlavors() {
   });
 }
 
-export function useSeedDefaultFlavors() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async () => {
-      if (!actor) throw new Error("Not connected");
-      return actor.seedDefaultFlavors();
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["flavors"] });
-    },
-  });
-}
-
 export function useToggleAvailability() {
   const { actor } = useActor();
   const queryClient = useQueryClient();

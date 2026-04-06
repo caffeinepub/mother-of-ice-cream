@@ -41,7 +41,6 @@ import {
   useGetOrders,
   useGetRazorpayKey,
   useGetUpiId,
-  useSeedDefaultFlavors,
   useSetRazorpayKey,
   useSetUpiId,
   useToggleAvailability,
@@ -608,24 +607,10 @@ export default function AdminPage() {
   const updateFlavor = useUpdateFlavor();
   const deleteFlavor = useDeleteFlavor();
   const clearAllFlavors = useClearAllFlavors();
-  const seedDefaultFlavors = useSeedDefaultFlavors();
   const toggleAvail = useToggleAvailability();
   const toggleFeat = useToggleFeatured();
   const deleteOrder = useDeleteOrder();
   const deleteMessage = useDeleteContactMessage();
-
-  // Auto-seed default products when flavors list is empty
-  // biome-ignore lint/correctness/useExhaustiveDependencies: seed only triggers when flavors loads empty
-  useEffect(() => {
-    if (
-      flavors !== undefined &&
-      flavors.length === 0 &&
-      !seedDefaultFlavors.isPending
-    ) {
-      seedDefaultFlavors.mutate();
-    }
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [flavors]);
 
   const [modalOpen, setModalOpen] = useState(false);
   const [editingFlavor, setEditingFlavor] = useState<IceCreamFlavor | null>(
