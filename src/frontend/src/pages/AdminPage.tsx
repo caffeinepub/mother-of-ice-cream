@@ -39,7 +39,9 @@ import {
   useDeleteOrder,
   useGetOrders,
   useGetRazorpayKey,
+  useGetUpiId,
   useSetRazorpayKey,
+  useSetUpiId,
   useToggleAvailability,
   useToggleFeatured,
   useUpdateFlavor,
@@ -63,6 +65,7 @@ import {
   Plus,
   ReceiptText,
   Save,
+  Smartphone,
   Star,
   StarOff,
   Trash2,
@@ -265,6 +268,16 @@ function OrdersTab({
                 📍 {order.deliveryAddress}
               </p>
 
+              {/* Payment info */}
+              {order.razorpayPaymentId && (
+                <p className="text-xs text-muted-foreground mt-0.5">
+                  💳{" "}
+                  {order.razorpayPaymentId.startsWith("UTR:")
+                    ? `UPI Ref: ${order.razorpayPaymentId.replace("UTR:", "")}`
+                    : `Payment ID: ${order.razorpayPaymentId}`}
+                </p>
+              )}
+
               {/* Items */}
               <div className="mt-2 flex flex-wrap gap-1.5">
                 {order.items.map((item, iIdx) => (
@@ -348,9 +361,13 @@ function OrdersTab({
 
 function SettingsTab() {
   const { data: existingKey, isLoading: loadingKey } = useGetRazorpayKey();
+  const { data: existingUpiId, isLoading: loadingUpiId } = useGetUpiId();
   const setKey = useSetRazorpayKey();
+  const setUpiId = useSetUpiId();
   const [keyInput, setKeyInput] = useState("");
-  const [saved, setSaved] = useState(false);
+  const [upiInput, setUpiInput] = useState("");
+  const [savedKey, setSavedKey] = useState(false);
+  const [savedUpi, setSavedUpi] = useState(false);
 
   async function handleSaveKey() {
     const trimmed = keyInput.trim();
@@ -360,17 +377,119 @@ function SettingsTab() {
     }
     try {
       await setKey.mutateAsync(trimmed);
-      setSaved(true);
+      setSavedKey(true);
       setKeyInput("");
       toast.success("Razorpay Key ID saved successfully!");
-      setTimeout(() => setSaved(false), 3000);
+      setTimeout(() => setSavedKey(false), 3000);
     } catch {
       toast.error("Failed to save Razorpay Key ID.");
     }
   }
 
+  async function handleSaveUpiId() {
+    const trimmed = upiInput.trim();
+    if (!trimmed) {
+      toast.error("Please enter your UPI ID.");
+      return;
+    }
+    if (!trimmed.includes("@")) {
+      toast.error("UPI ID must contain '@'. Example: 9007819261@ybl");
+      return;
+    }
+    try {
+      await setUpiId.mutateAsync(trimmed);
+      setSavedUpi(true);
+      setUpiInput("");
+      toast.success(
+        "UPI ID saved! Customers can now pay via Google Pay & PhonePe.",
+      );
+      setTimeout(() => setSavedUpi(false), 3000);
+    } catch {
+      toast.error("Failed to save UPI ID.");
+    }
+  }
+
   return (
     <div className="max-w-xl space-y-6" data-ocid="admin.settings.panel">
+      {/* UPI ID card */}
+      <div className="bg-card rounded-card shadow-candy border border-border/40 p-6">
+        <div className="flex items-center gap-3 mb-4">
+          <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center">
+            <Smartphone className="w-5 h-5 text-blue-600" />
+          </div>
+          <div>
+            <h3 className="font-extrabold text-foreground">
+              UPI ID for Google Pay &amp; PhonePe
+            </h3>
+            <p className="text-xs text-muted-foreground">
+              Customers can pay directly without needing Razorpay
+            </p>
+          </div>
+        </div>
+
+        {loadingUpiId ? (
+          <Skeleton
+            className="h-10 w-full rounded-xl"
+            data-ocid="admin.loading_state"
+          />
+        ) : (
+          <>
+            {existingUpiId && (
+              <div className="mb-3 flex items-center gap-2 bg-blue-50 text-blue-700 rounded-xl px-4 py-2.5">
+                <CheckCircle2 className="w-4 h-4 shrink-0" />
+                <div className="min-w-0">
+                  <p className="text-xs font-bold">UPI ID configured</p>
+                  <p className="text-sm font-mono font-bold truncate">
+                    {existingUpiId}
+                  </p>
+                </div>
+              </div>
+            )}
+            <div className="space-y-3">
+              <Label htmlFor="upi-id" className="font-bold text-sm">
+                {existingUpiId ? "Update UPI ID" : "Enter your UPI ID"}
+              </Label>
+              <Input
+                id="upi-id"
+                value={upiInput}
+                onChange={(e) => setUpiInput(e.target.value)}
+                placeholder="9007819261@ybl or yourname@oksbi"
+                className="rounded-xl border-2 font-mono text-sm focus-visible:ring-primary"
+                autoComplete="off"
+                data-ocid="admin.settings.input"
+              />
+              <p className="text-xs text-muted-foreground">
+                Your UPI ID looks like: <strong>phonenumber@ybl</strong>,{" "}
+                <strong>phonenumber@paytm</strong>, <strong>name@oksbi</strong>,
+                etc. Find it in your Google Pay or PhonePe app under Profile.
+              </p>
+              <Button
+                onClick={handleSaveUpiId}
+                disabled={setUpiId.isPending || !upiInput.trim()}
+                className="rounded-pill border-0 text-white font-bold shadow-md hover:opacity-90 transition-all"
+                style={{ background: "#4285F4" }}
+                data-ocid="admin.settings.save_button"
+              >
+                {setUpiId.isPending ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…
+                  </>
+                ) : savedUpi ? (
+                  <>
+                    <CheckCircle2 className="mr-2 h-4 w-4" /> Saved!
+                  </>
+                ) : (
+                  <>
+                    <Save className="mr-2 h-4 w-4" /> Save UPI ID
+                  </>
+                )}
+              </Button>
+            </div>
+          </>
+        )}
+      </div>
+
+      {/* Razorpay key card */}
       <div className="bg-card rounded-card shadow-candy border border-border/40 p-6">
         <div className="flex items-center gap-3 mb-4">
           <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center">
@@ -379,7 +498,7 @@ function SettingsTab() {
           <div>
             <h3 className="font-extrabold text-foreground">Razorpay Key ID</h3>
             <p className="text-xs text-muted-foreground">
-              Required for Google Pay, PhonePe, UPI &amp; card payments
+              For card payments &amp; additional UPI options
             </p>
           </div>
         </div>
@@ -428,7 +547,7 @@ function SettingsTab() {
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" /> Saving…
                   </>
-                ) : saved ? (
+                ) : savedKey ? (
                   <>
                     <CheckCircle2 className="mr-2 h-4 w-4" /> Saved!
                   </>
@@ -444,17 +563,32 @@ function SettingsTab() {
       </div>
 
       <div className="bg-accent/20 rounded-card border border-accent/30 p-5">
-        <h4 className="font-extrabold text-sm text-foreground mb-2">
-          💡 How to enable payments
+        <h4 className="font-extrabold text-sm text-foreground mb-3">
+          💡 How to set up payments
         </h4>
-        <ol className="text-xs text-muted-foreground space-y-1.5 list-decimal list-inside">
-          <li>Create a free account at razorpay.com</li>
-          <li>Go to Settings → API Keys → Generate Live Key</li>
-          <li>Copy the Key ID (starts with rzp_live_) and paste above</li>
-          <li>
-            Customers can now pay via Google Pay, PhonePe, UPI &amp; cards
-          </li>
-        </ol>
+        <div className="space-y-3">
+          <div>
+            <p className="text-xs font-bold text-foreground mb-1">
+              Option A — Direct UPI (Google Pay / PhonePe)
+            </p>
+            <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+              <li>Open Google Pay or PhonePe on your phone</li>
+              <li>Go to Profile → find your UPI ID</li>
+              <li>Paste it in the UPI ID field above and save</li>
+              <li>Customers can now pay directly to your UPI account</li>
+            </ol>
+          </div>
+          <div>
+            <p className="text-xs font-bold text-foreground mb-1">
+              Option B — Razorpay (Cards + All UPI)
+            </p>
+            <ol className="text-xs text-muted-foreground space-y-1 list-decimal list-inside">
+              <li>Create a free account at razorpay.com</li>
+              <li>Go to Settings → API Keys → Generate Live Key</li>
+              <li>Copy the Key ID (starts with rzp_live_) and paste above</li>
+            </ol>
+          </div>
+        </div>
       </div>
     </div>
   );
@@ -889,7 +1023,7 @@ export default function AdminPage() {
                 Payment Settings
               </h2>
               <p className="text-sm text-muted-foreground mt-0.5">
-                Configure Razorpay to enable online payments.
+                Configure UPI ID and/or Razorpay to enable online payments.
               </p>
             </div>
             <SettingsTab />

@@ -10,7 +10,17 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { useCart } from "@/context/CartContext";
 import { useActor } from "@/hooks/useActor";
-import { CreditCard, Loader2, MapPin, Phone, User } from "lucide-react";
+import { useGetUpiId } from "@/hooks/useQueries";
+import {
+  CheckCircle2,
+  CreditCard,
+  ExternalLink,
+  Loader2,
+  MapPin,
+  Phone,
+  Truck,
+  User,
+} from "lucide-react";
 import { useState } from "react";
 import { toast } from "sonner";
 import OrderConfirmation from "./OrderConfirmation";
@@ -24,7 +34,10 @@ interface ConfirmedOrder {
   orderId: bigint;
   customerName: string;
   totalAmount: number;
+  paymentMethod: "online" | "cod";
 }
+
+type PaymentMethod = "gpay" | "phonepe" | "online" | "cod";
 
 declare global {
   interface Window {
@@ -85,7 +98,7 @@ function GoogleIcon({ size = 38 }: { size?: number }) {
         fill="#34A853"
       />
       <path
-        d="M18 26.1c-.2-.7-.3-1.4-.3-2.1s.1-1.4.3-2.1v-2.9h-3.5C13.6 20.7 13 22.3 13 24s.6 3.3 1.5 4.9l3.5-2.8z"
+        d="M18 26.1c-.2-.7-.3-2.1-.3-2.1s.1-1.4.3-2.1v-2.9h-3.5C13.6 20.7 13 22.3 13 24s.6 3.3 1.5 4.9l3.5-2.8z"
         fill="#FBBC05"
       />
       <path
@@ -101,7 +114,11 @@ export default function CheckoutModal({
   onOpenChange,
 }: CheckoutModalProps) {
   const { items, totalPrice, clearCart } = useCart();
-  const { actor } = useActor();
+  const { actor, isFetching } = useActor();
+  const { data: upiId } = useGetUpiId();
+
+  // Derived actor connection states
+  const isConnecting = isFetching && !actor;
 
   const [name, setName] = useState("");
   const [phone, setPhone] = useState("");
@@ -111,6 +128,15 @@ export default function CheckoutModal({
   const [confirmedOrder, setConfirmedOrder] = useState<ConfirmedOrder | null>(
     null,
   );
+  const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("online");
+  const [razorpayAvailable, setRazorpayAvailable] = useState<boolean | null>(
+    null,
+  );
+
+  // UPI confirmation flow state
+  const [upiStep, setUpiStep] = useState<"idle" | "confirm">("idle");
+  const [utrInput, setUtrInput] = useState("");
+  const [utrError, setUtrError] = useState("");
 
   function validate() {
     const errs: Record<string, string> = {};
@@ -120,6 +146,129 @@ export default function CheckoutModal({
     if (!address.trim() || address.trim().length < 10)
       errs.address = "Please enter your full delivery address";
     return errs;
+  }
+
+  async function handleRazorpayKeyCheck(): Promise<string | null> {
+    if (!actor) return null;
+    try {
+      const keyResult = await (actor as any).getRazorpayKeyId();
+      return Array.isArray(keyResult) && keyResult.length > 0
+        ? keyResult[0]
+        : null;
+    } catch {
+      return null;
+    }
+  }
+
+  // Check on modal open
+  if (open && razorpayAvailable === null) {
+    handleRazorpayKeyCheck().then((key) => {
+      const available = !!key;
+      setRazorpayAvailable(available);
+      if (!available && !upiId) {
+        setPaymentMethod("cod");
+      } else if (!available && upiId) {
+        setPaymentMethod("gpay");
+      }
+    });
+  }
+
+  function handleClose() {
+    if (!isPaying) {
+      onOpenChange(false);
+      setTimeout(() => {
+        setName("");
+        setPhone("");
+        setAddress("");
+        setErrors({});
+        setRazorpayAvailable(null);
+        setPaymentMethod("online");
+        setUpiStep("idle");
+        setUtrInput("");
+        setUtrError("");
+      }, 300);
+    }
+  }
+
+  function buildUpiDeepLink(app: "gpay" | "phonepe") {
+    const pa = encodeURIComponent(upiId ?? "");
+    const pn = encodeURIComponent("Mother of Ice-cream");
+    const am = totalPrice.toFixed(2);
+    const tn = encodeURIComponent("Ice Cream Order");
+    const base = `upi://pay?pa=${pa}&pn=${pn}&am=${am}&cu=INR&tn=${tn}`;
+    if (app === "gpay") return `${base}&mc=5441`;
+    return base;
+  }
+
+  function handleSelectPayment(method: PaymentMethod) {
+    setPaymentMethod(method);
+    setUpiStep("idle");
+    setUtrInput("");
+    setUtrError("");
+  }
+
+  function handleOpenUpiApp(app: "gpay" | "phonepe") {
+    const link = buildUpiDeepLink(app);
+    window.open(link, "_blank");
+    setUpiStep("confirm");
+  }
+
+  async function handleConfirmUpiPayment() {
+    const errs = validate();
+    if (Object.keys(errs).length > 0) {
+      setErrors(errs);
+      return;
+    }
+    const trimmedUtr = utrInput.trim();
+    if (!trimmedUtr) {
+      setUtrError("Please enter your UTR / transaction ID");
+      return;
+    }
+    if (trimmedUtr.length < 8) {
+      setUtrError("UTR number seems too short. Please check again.");
+      return;
+    }
+    setUtrError("");
+    setErrors({});
+
+    if (!actor) {
+      toast.error("Not connected. Please refresh and try again.");
+      return;
+    }
+
+    setIsPaying(true);
+    const cartItems = items.map((item) => ({
+      flavorId: item.flavorId,
+      flavorName: item.flavorName,
+      quantity: BigInt(item.quantity),
+      price: item.price,
+    }));
+
+    try {
+      const orderId = await (actor as any).placeOrder(
+        name.trim(),
+        phone.trim(),
+        address.trim(),
+        cartItems,
+        totalPrice,
+        "",
+        `UTR:${trimmedUtr}`,
+      );
+      clearCart();
+      setConfirmedOrder({
+        orderId,
+        customerName: name.trim(),
+        totalAmount: totalPrice,
+        paymentMethod: "online",
+      });
+      onOpenChange(false);
+    } catch (err) {
+      toast.error(
+        err instanceof Error ? err.message : "Order failed. Please try again.",
+      );
+    } finally {
+      setIsPaying(false);
+    }
   }
 
   async function handlePayment() {
@@ -137,14 +286,10 @@ export default function CheckoutModal({
 
     setIsPaying(true);
 
-    // Capture actor reference to use safely inside async handler
     const currentActor = actor;
-
-    // Snapshot cart items before async payment flow
     const cartItems = items.map((item) => ({
       flavorId: item.flavorId,
       flavorName: item.flavorName,
-      // quantity must be BigInt for Motoko Nat
       quantity: BigInt(item.quantity),
       price: item.price,
     }));
@@ -154,27 +299,49 @@ export default function CheckoutModal({
     const snapshotAddress = address.trim();
 
     try {
-      // Fetch Razorpay key from backend
-      const keyResult = await (currentActor as any).getRazorpayKeyId();
-      const razorpayKey: string | null =
-        Array.isArray(keyResult) && keyResult.length > 0 ? keyResult[0] : null;
-
-      if (!razorpayKey) {
-        // No Razorpay key configured — fall back to Cash on Delivery
+      if (paymentMethod === "cod") {
         const orderId = await (currentActor as any).placeOrder(
           snapshotName,
           snapshotPhone,
           snapshotAddress,
           cartItems,
           snapshotTotal,
-          "", // no razorpay order id
-          "", // no razorpay payment id
+          "",
+          "",
         );
         clearCart();
         setConfirmedOrder({
           orderId,
           customerName: snapshotName,
           totalAmount: snapshotTotal,
+          paymentMethod: "cod",
+        });
+        onOpenChange(false);
+        setIsPaying(false);
+        return;
+      }
+
+      // Online payment path — fetch Razorpay key
+      const keyResult = await (currentActor as any).getRazorpayKeyId();
+      const razorpayKey: string | null =
+        Array.isArray(keyResult) && keyResult.length > 0 ? keyResult[0] : null;
+
+      if (!razorpayKey) {
+        const orderId = await (currentActor as any).placeOrder(
+          snapshotName,
+          snapshotPhone,
+          snapshotAddress,
+          cartItems,
+          snapshotTotal,
+          "",
+          "",
+        );
+        clearCart();
+        setConfirmedOrder({
+          orderId,
+          customerName: snapshotName,
+          totalAmount: snapshotTotal,
+          paymentMethod: "cod",
         });
         onOpenChange(false);
         setIsPaying(false);
@@ -211,12 +378,12 @@ export default function CheckoutModal({
               response.razorpay_order_id ?? "",
               response.razorpay_payment_id,
             );
-
             clearCart();
             setConfirmedOrder({
               orderId,
               customerName: snapshotName,
               totalAmount: snapshotTotal,
+              paymentMethod: "online",
             });
             onOpenChange(false);
           } catch (_err) {
@@ -244,46 +411,17 @@ export default function CheckoutModal({
     }
   }
 
-  async function handleRazorpayKeyCheck(): Promise<string | null> {
-    if (!actor) return null;
-    try {
-      const keyResult = await (actor as any).getRazorpayKeyId();
-      return Array.isArray(keyResult) && keyResult.length > 0
-        ? keyResult[0]
-        : null;
-    } catch {
-      return null;
-    }
-  }
-
-  // Determine button label — we optimistically show COD label if no key
-  // but the actual check happens in handlePayment
-  const [razorpayAvailable, setRazorpayAvailable] = useState<boolean | null>(
-    null,
-  );
-
-  // Check on modal open
-  if (open && razorpayAvailable === null) {
-    handleRazorpayKeyCheck().then((key) => setRazorpayAvailable(!!key));
-  }
-  if (!open && razorpayAvailable !== null) {
-    // Reset when closed
-  }
-
-  function handleClose() {
-    if (!isPaying) {
-      onOpenChange(false);
-      setTimeout(() => {
-        setName("");
-        setPhone("");
-        setAddress("");
-        setErrors({});
-        setRazorpayAvailable(null);
-      }, 300);
-    }
-  }
-
   const hasOnlinePayment = razorpayAvailable === true;
+  const hasUpi = !!upiId;
+  const isUpiMethod = paymentMethod === "gpay" || paymentMethod === "phonepe";
+  const isCod = paymentMethod === "cod";
+  const isOnline = paymentMethod === "online";
+
+  // Determine layout: how many payment tiles to show
+  // gpay+phonepe tiles only shown if UPI configured
+  // razorpay tile only shown if razorpay configured
+  const showUpiTiles = hasUpi;
+  const showRazorpayTile = hasOnlinePayment;
 
   return (
     <>
@@ -299,37 +437,278 @@ export default function CheckoutModal({
             </DialogTitle>
           </DialogHeader>
 
-          {/* Payment method section */}
-          {hasOnlinePayment ? (
-            <div className="rounded-xl border-2 border-pink-200 bg-pink-50/60 p-4 mb-1">
-              <p className="text-xs font-bold text-pink-600 uppercase tracking-widest mb-3">
-                Pay instantly with UPI
+          {/* Payment Method Selection */}
+          {(showUpiTiles || showRazorpayTile) && (
+            <div className="mb-1">
+              <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">
+                How would you like to pay?
               </p>
-              <div className="grid grid-cols-2 gap-3 mb-3">
-                {/* Google Pay tile */}
-                <div className="flex flex-col items-center justify-center gap-2 rounded-xl bg-[#4285F4] p-4 shadow-md">
-                  <GoogleIcon size={38} />
-                  <span className="text-white font-extrabold text-sm tracking-wide">
-                    Google Pay
-                  </span>
-                </div>
-                {/* PhonePe tile */}
-                <div className="flex flex-col items-center justify-center gap-2 rounded-xl bg-[#5F259F] p-4 shadow-md">
-                  <div className="w-10 h-10 rounded-full bg-white flex items-center justify-center">
-                    <span className="font-black text-[#5F259F] text-base leading-none">
-                      Pe
-                    </span>
+
+              {/* UPI Confirmation steps — replaces tiles when in confirm state */}
+              {isUpiMethod && upiStep === "confirm" ? (
+                <div className="rounded-xl border-2 border-blue-200 bg-blue-50/60 p-4 space-y-4">
+                  <div className="flex items-center justify-between">
+                    <p className="text-xs font-bold text-blue-700 uppercase tracking-widest">
+                      {paymentMethod === "gpay" ? "Google Pay" : "PhonePe"}{" "}
+                      Payment
+                    </p>
+                    <button
+                      type="button"
+                      onClick={() => {
+                        setUpiStep("idle");
+                        setUtrInput("");
+                        setUtrError("");
+                      }}
+                      className="text-xs text-muted-foreground hover:text-foreground underline"
+                    >
+                      ← Change method
+                    </button>
                   </div>
-                  <span className="text-white font-extrabold text-sm tracking-wide">
-                    PhonePe
-                  </span>
+
+                  {/* Step 1 */}
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-black shrink-0 mt-0.5">
+                      1
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-bold text-foreground mb-2">
+                        Open{" "}
+                        {paymentMethod === "gpay" ? "Google Pay" : "PhonePe"}{" "}
+                        &amp; pay
+                      </p>
+                      <button
+                        type="button"
+                        onClick={() =>
+                          handleOpenUpiApp(paymentMethod as "gpay" | "phonepe")
+                        }
+                        className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white font-bold text-sm shadow-md transition-opacity hover:opacity-90 ${
+                          paymentMethod === "gpay"
+                            ? "bg-[#4285F4]"
+                            : "bg-[#5F259F]"
+                        }`}
+                        data-ocid="checkout.primary_button"
+                      >
+                        {paymentMethod === "gpay" ? (
+                          <GoogleIcon size={18} />
+                        ) : (
+                          <span className="w-5 h-5 rounded-full bg-white flex items-center justify-center">
+                            <span
+                              className="font-black text-[#5F259F]"
+                              style={{ fontSize: "8px", lineHeight: 1 }}
+                            >
+                              Pe
+                            </span>
+                          </span>
+                        )}
+                        Open{" "}
+                        {paymentMethod === "gpay" ? "Google Pay" : "PhonePe"}
+                        <ExternalLink className="w-3.5 h-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Step 2 */}
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-black shrink-0 mt-0.5">
+                      2
+                    </div>
+                    <p className="text-sm text-foreground">
+                      Complete payment of{" "}
+                      <span className="font-extrabold text-primary">
+                        ₹{totalPrice.toFixed(0)}
+                      </span>{" "}
+                      in the app
+                    </p>
+                  </div>
+
+                  {/* Step 3 */}
+                  <div className="flex items-start gap-3">
+                    <div className="w-6 h-6 rounded-full bg-blue-600 text-white flex items-center justify-center text-xs font-black shrink-0 mt-0.5">
+                      3
+                    </div>
+                    <div className="flex-1 space-y-2">
+                      <p className="text-sm font-bold text-foreground">
+                        Enter your transaction reference (UTR)
+                      </p>
+                      <Input
+                        value={utrInput}
+                        onChange={(e) => setUtrInput(e.target.value)}
+                        placeholder="Enter UTR / transaction ID"
+                        className="rounded-xl border-2 font-mono text-sm focus-visible:ring-primary"
+                        inputMode="numeric"
+                        data-ocid="checkout.input"
+                      />
+                      {utrError && (
+                        <p
+                          className="text-destructive text-xs font-semibold"
+                          data-ocid="checkout.error_state"
+                        >
+                          {utrError}
+                        </p>
+                      )}
+                    </div>
+                  </div>
                 </div>
-              </div>
-              <p className="text-center text-xs text-muted-foreground font-medium">
-                Also accepts UPI, Debit &amp; Credit Cards
-              </p>
+              ) : (
+                /* Payment tiles grid */
+                <div
+                  className={`grid gap-3 ${
+                    showUpiTiles && showRazorpayTile
+                      ? "grid-cols-3"
+                      : showUpiTiles
+                        ? "grid-cols-2"
+                        : "grid-cols-2"
+                  }`}
+                >
+                  {/* Google Pay tile */}
+                  {showUpiTiles && (
+                    <button
+                      type="button"
+                      onClick={() => handleSelectPayment("gpay")}
+                      className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4285F4] ${
+                        paymentMethod === "gpay"
+                          ? "border-[#4285F4] bg-blue-50/80 shadow-md"
+                          : "border-border bg-muted/30 hover:border-[#4285F4]/50 hover:bg-blue-50/30"
+                      }`}
+                      aria-pressed={paymentMethod === "gpay"}
+                      data-ocid="checkout.toggle"
+                    >
+                      <div className="w-9 h-9 rounded-full bg-[#4285F4] flex items-center justify-center">
+                        <GoogleIcon size={28} />
+                      </div>
+                      <span
+                        className={`font-bold text-xs ${
+                          paymentMethod === "gpay"
+                            ? "text-[#4285F4]"
+                            : "text-foreground"
+                        }`}
+                      >
+                        Google Pay
+                      </span>
+                      {paymentMethod === "gpay" && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#4285F4] text-white text-[9px] font-bold">
+                          ✓
+                        </span>
+                      )}
+                    </button>
+                  )}
+
+                  {/* PhonePe tile */}
+                  {showUpiTiles && (
+                    <button
+                      type="button"
+                      onClick={() => handleSelectPayment("phonepe")}
+                      className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5F259F] ${
+                        paymentMethod === "phonepe"
+                          ? "border-[#5F259F] bg-purple-50/80 shadow-md"
+                          : "border-border bg-muted/30 hover:border-[#5F259F]/50 hover:bg-purple-50/30"
+                      }`}
+                      aria-pressed={paymentMethod === "phonepe"}
+                      data-ocid="checkout.toggle"
+                    >
+                      <div className="w-9 h-9 rounded-full bg-[#5F259F] flex items-center justify-center">
+                        <span
+                          className="text-white font-black"
+                          style={{ fontSize: "11px", lineHeight: 1 }}
+                        >
+                          Pe
+                        </span>
+                      </div>
+                      <span
+                        className={`font-bold text-xs ${
+                          paymentMethod === "phonepe"
+                            ? "text-[#5F259F]"
+                            : "text-foreground"
+                        }`}
+                      >
+                        PhonePe
+                      </span>
+                      {paymentMethod === "phonepe" && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#5F259F] text-white text-[9px] font-bold">
+                          ✓
+                        </span>
+                      )}
+                    </button>
+                  )}
+
+                  {/* Razorpay online tile */}
+                  {showRazorpayTile && (
+                    <button
+                      type="button"
+                      onClick={() => handleSelectPayment("online")}
+                      className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
+                        isOnline
+                          ? "border-primary bg-primary/5 shadow-md"
+                          : "border-border bg-muted/30 hover:border-primary/40 hover:bg-muted/60"
+                      }`}
+                      aria-pressed={isOnline}
+                      data-ocid="checkout.toggle"
+                    >
+                      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
+                        <CreditCard className="w-4 h-4 text-primary" />
+                      </div>
+                      <span
+                        className={`font-bold text-xs text-center leading-tight ${
+                          isOnline ? "text-primary" : "text-foreground"
+                        }`}
+                      >
+                        Cards &amp; UPI
+                      </span>
+                      <span className="text-[9px] text-muted-foreground text-center leading-tight">
+                        via Razorpay
+                      </span>
+                      {isOnline && (
+                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-primary text-white text-[9px] font-bold">
+                          ✓
+                        </span>
+                      )}
+                    </button>
+                  )}
+
+                  {/* Cash on Delivery tile — always shown, in its own row if UPI+Razorpay fills the grid */}
+                </div>
+              )}
+
+              {/* COD tile — always shown separately below the payment grid */}
+              {!(isUpiMethod && upiStep === "confirm") && (
+                <button
+                  type="button"
+                  onClick={() => handleSelectPayment("cod")}
+                  className={`mt-3 w-full flex items-center justify-between gap-3 rounded-xl border-2 px-4 py-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 ${
+                    isCod
+                      ? "border-emerald-500 bg-emerald-50/60 shadow-sm"
+                      : "border-border bg-muted/30 hover:border-emerald-400/60 hover:bg-muted/60"
+                  }`}
+                  aria-pressed={isCod}
+                  data-ocid="checkout.toggle"
+                >
+                  <div className="flex items-center gap-3">
+                    <div className="w-8 h-8 rounded-full bg-emerald-100 flex items-center justify-center shrink-0">
+                      <Truck className="w-4 h-4 text-emerald-600" />
+                    </div>
+                    <div className="text-left">
+                      <p
+                        className={`font-bold text-sm ${
+                          isCod ? "text-emerald-700" : "text-foreground"
+                        }`}
+                      >
+                        Cash on Delivery
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Pay when delivered
+                      </p>
+                    </div>
+                  </div>
+                  {isCod && (
+                    <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                  )}
+                </button>
+              )}
             </div>
-          ) : (
+          )}
+
+          {/* When neither UPI nor Razorpay configured — simple COD info */}
+          {!showUpiTiles && !showRazorpayTile && (
             <div className="rounded-xl border-2 border-green-200 bg-green-50/60 p-4 mb-1">
               <p className="text-xs font-bold text-green-700 uppercase tracking-widest mb-1">
                 Cash on Delivery
@@ -458,53 +837,126 @@ export default function CheckoutModal({
           </div>
 
           <div className="flex flex-col gap-3 pt-2">
-            <Button
-              onClick={handlePayment}
-              disabled={isPaying || !actor}
-              className="w-full rounded-pill gradient-pink border-0 text-white font-bold py-6 shadow-candy hover:shadow-candy-lg transition-all"
-              data-ocid="checkout.submit_button"
-            >
-              {isPaying ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Processing…
-                </>
-              ) : hasOnlinePayment ? (
-                <>🔒 Pay ₹{totalPrice.toFixed(0)} Now</>
-              ) : (
-                <>Place Order (Pay on Delivery)</>
-              )}
-            </Button>
-
-            {/* Payment method badges */}
-            {hasOnlinePayment && (
-              <div className="flex items-center justify-center gap-2 flex-wrap">
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-blue-50 border border-blue-200 text-blue-700 text-xs font-semibold">
-                  <GoogleIcon size={14} />
-                  Google Pay
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-purple-50 border border-purple-200 text-purple-700 text-xs font-semibold">
-                  <span className="inline-flex items-center justify-center w-3.5 h-3.5 rounded-full bg-[#5F259F]">
-                    <span
-                      className="text-white font-black"
-                      style={{ fontSize: "7px", lineHeight: 1 }}
-                    >
-                      Pe
+            {/* UPI confirm button */}
+            {isUpiMethod && upiStep === "confirm" ? (
+              <Button
+                onClick={handleConfirmUpiPayment}
+                disabled={isPaying || isConnecting}
+                className="w-full rounded-pill border-0 text-white font-bold py-6 transition-all"
+                style={{
+                  background: paymentMethod === "gpay" ? "#4285F4" : "#5F259F",
+                }}
+                data-ocid="checkout.submit_button"
+              >
+                {isConnecting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Connecting…
+                  </>
+                ) : isPaying ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Placing Order…
+                  </>
+                ) : (
+                  <>
+                    <CheckCircle2 className="mr-2 h-4 w-4" />
+                    Confirm &amp; Place Order
+                  </>
+                )}
+              </Button>
+            ) : isUpiMethod ? (
+              /* Show the open-app button when UPI selected but not yet in confirm state */
+              <Button
+                onClick={() => {
+                  const errs = validate();
+                  if (Object.keys(errs).length > 0) {
+                    setErrors(errs);
+                    return;
+                  }
+                  setErrors({});
+                  handleOpenUpiApp(paymentMethod as "gpay" | "phonepe");
+                }}
+                disabled={isConnecting}
+                className="w-full rounded-pill border-0 text-white font-bold py-6 transition-all"
+                style={{
+                  background: paymentMethod === "gpay" ? "#4285F4" : "#5F259F",
+                }}
+                data-ocid="checkout.primary_button"
+              >
+                {isConnecting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Connecting…
+                  </>
+                ) : paymentMethod === "gpay" ? (
+                  <>
+                    <GoogleIcon size={20} />
+                    <span className="ml-2">
+                      Pay ₹{totalPrice.toFixed(0)} with Google Pay
                     </span>
-                  </span>
-                  PhonePe
-                </span>
-                <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-muted border border-border text-muted-foreground text-xs font-semibold">
-                  UPI / Cards
-                </span>
-              </div>
+                    <ExternalLink className="ml-2 h-4 w-4" />
+                  </>
+                ) : (
+                  <>
+                    <span className="w-5 h-5 rounded-full bg-white flex items-center justify-center shrink-0">
+                      <span
+                        className="font-black text-[#5F259F]"
+                        style={{ fontSize: "8px", lineHeight: 1 }}
+                      >
+                        Pe
+                      </span>
+                    </span>
+                    <span className="ml-2">
+                      Pay ₹{totalPrice.toFixed(0)} with PhonePe
+                    </span>
+                    <ExternalLink className="ml-2 h-4 w-4" />
+                  </>
+                )}
+              </Button>
+            ) : (
+              <Button
+                onClick={handlePayment}
+                disabled={isPaying || isConnecting}
+                className="w-full rounded-pill gradient-pink border-0 text-white font-bold py-6 shadow-candy hover:shadow-candy-lg transition-all"
+                data-ocid="checkout.submit_button"
+              >
+                {isConnecting ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Connecting…
+                  </>
+                ) : isPaying ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Processing…
+                  </>
+                ) : isOnline && hasOnlinePayment ? (
+                  <>🔒 Pay ₹{totalPrice.toFixed(0)} Now</>
+                ) : (
+                  <>
+                    <Truck className="mr-2 h-4 w-4" />
+                    Place Order (Pay on Delivery)
+                  </>
+                )}
+              </Button>
             )}
 
-            <p className="text-center text-xs text-muted-foreground">
-              {hasOnlinePayment
-                ? "Secured by Razorpay"
-                : "Pay cash when delivered"}
-            </p>
+            {isUpiMethod && upiStep === "idle" && (
+              <p className="text-center text-xs text-muted-foreground">
+                You'll be taken to your UPI app to complete payment
+              </p>
+            )}
+            {isOnline && hasOnlinePayment && (
+              <p className="text-center text-xs text-muted-foreground">
+                Secured by Razorpay
+              </p>
+            )}
+            {isCod && (
+              <p className="text-center text-xs text-muted-foreground">
+                Pay cash when delivered
+              </p>
+            )}
           </div>
         </DialogContent>
       </Dialog>
@@ -516,6 +968,7 @@ export default function CheckoutModal({
           orderId={confirmedOrder.orderId}
           customerName={confirmedOrder.customerName}
           totalAmount={confirmedOrder.totalAmount}
+          paymentMethod={confirmedOrder.paymentMethod}
         />
       )}
     </>

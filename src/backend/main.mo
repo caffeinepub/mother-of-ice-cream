@@ -92,91 +92,92 @@ actor {
   var nextId = 1;
   var nextOrderId = 1;
   var razorpayKeyId : ?Text = null;
+  var upiId : ?Text = null;
 
   let flavors = Map.empty<Nat, IceCreamFlavor>();
   let contactMessages = List.empty<ContactMessage>();
   let userProfiles = Map.empty<Principal, UserProfile>();
   let orders = Map.empty<Nat, Order>();
 
-  // Seed sample flavors
+  // Seed sample flavors — all with AI-generated images
   let sampleFlavors = [
     {
       id = 1;
       name = "Vanilla";
-      description = "Classic vanilla ice cream.";
+      description = "Classic creamy vanilla ice cream — smooth, rich, and timeless.";
       price = 80.0;
       category = "Classic";
-      imageUrl = null;
+      imageUrl = ?"/assets/generated/vanilla-icecream.dim_400x400.jpg";
       isAvailable = true;
       isFeatured = true;
     },
     {
       id = 2;
       name = "Chocolate";
-      description = "Rich chocolate ice cream.";
+      description = "Rich dark chocolate ice cream with intense cocoa flavor in every scoop.";
       price = 80.0;
       category = "Classic";
-      imageUrl = null;
+      imageUrl = ?"/assets/generated/chocolate-classic-icecream.dim_400x400.jpg";
       isAvailable = true;
       isFeatured = true;
     },
     {
       id = 3;
       name = "Strawberry";
-      description = "Fresh strawberry ice cream.";
+      description = "Fresh strawberry ice cream made with real fruit pieces — sweet and refreshing.";
       price = 80.0;
       category = "Classic";
-      imageUrl = null;
+      imageUrl = ?"/assets/generated/strawberry-classic-icecream.dim_400x400.jpg";
       isAvailable = true;
       isFeatured = false;
     },
     {
       id = 4;
       name = "Mango Sorbet";
-      description = "Vegan mango sorbet.";
+      description = "Vegan mango sorbet bursting with tropical sunshine and real mango goodness.";
       price = 90.0;
       category = "Vegan";
-      imageUrl = null;
+      imageUrl = ?"/assets/generated/mango-sorbet-icecream.dim_400x400.jpg";
       isAvailable = true;
       isFeatured = false;
     },
     {
       id = 5;
       name = "Coconut";
-      description = "Creamy coconut ice cream.";
+      description = "Creamy coconut ice cream topped with toasted coconut flakes — a tropical escape.";
       price = 90.0;
       category = "Premium";
-      imageUrl = null;
+      imageUrl = ?"/assets/generated/coconut-icecream.dim_400x400.jpg";
       isAvailable = true;
       isFeatured = false;
     },
     {
       id = 6;
       name = "Pumpkin Spice";
-      description = "Seasonal pumpkin spice flavor.";
+      description = "Seasonal pumpkin spice ice cream with warm cinnamon and autumn spice notes.";
       price = 100.0;
       category = "Seasonal";
-      imageUrl = null;
+      imageUrl = ?"/assets/generated/pumpkin-spice-icecream.dim_400x400.jpg";
       isAvailable = false;
       isFeatured = false;
     },
     {
       id = 7;
       name = "Mint Chocolate Chip";
-      description = "Mint ice cream with chocolate chips.";
+      description = "Cool mint ice cream loaded with dark chocolate chips — refreshing and indulgent.";
       price = 90.0;
       category = "Classic";
-      imageUrl = null;
+      imageUrl = ?"/assets/generated/mint-choc-chip-icecream.dim_400x400.jpg";
       isAvailable = true;
       isFeatured = false;
     },
     {
       id = 8;
       name = "Raspberry Sorbet";
-      description = "Vegan raspberry sorbet.";
+      description = "Vegan ruby red raspberry sorbet — tangy, bright, and full of berry flavor.";
       price = 90.0;
       category = "Vegan";
-      imageUrl = null;
+      imageUrl = ?"/assets/generated/raspberry-sorbet-icecream.dim_400x400.jpg";
       isAvailable = true;
       isFeatured = false;
     },
@@ -527,5 +528,14 @@ actor {
 
   public query func getRazorpayKeyId() : async ?Text {
     razorpayKeyId;
+  };
+
+  // UPI ID Management (Google Pay / PhonePe direct payments)
+  public shared func setUpiId(id : Text) : async () {
+    upiId := ?id;
+  };
+
+  public query func getUpiId() : async ?Text {
+    upiId;
   };
 };

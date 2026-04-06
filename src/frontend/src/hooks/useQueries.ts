@@ -306,3 +306,30 @@ export function useDeleteContactMessage() {
     },
   });
 }
+
+export function useGetUpiId() {
+  const { actor, isFetching } = useActor();
+  return useQuery<string | null>({
+    queryKey: ["upiId"],
+    queryFn: async () => {
+      if (!actor) return null;
+      const result = await (actor as any).getUpiId();
+      return Array.isArray(result) && result.length > 0 ? result[0] : null;
+    },
+    enabled: !!actor && !isFetching,
+  });
+}
+
+export function useSetUpiId() {
+  const { actor } = useActor();
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: async (id: string) => {
+      if (!actor) throw new Error("Not connected");
+      return (actor as any).setUpiId(id);
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ["upiId"] });
+    },
+  });
+}
