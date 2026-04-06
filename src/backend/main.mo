@@ -90,7 +90,6 @@ actor {
   };
 
   // Explicit migration: preserve old stable sampleFlavors so M0169 is not triggered.
-  // This was implicitly stable in the previous version; we retain it here and clear it in postupgrade.
   stable var sampleFlavors : [IceCreamFlavor] = [];
 
   // Stable state - persists across upgrades
@@ -143,12 +142,29 @@ actor {
     userProfilesEntries := [];
     // Clear migrated legacy stable var
     sampleFlavors := [];
-    // Clear all flavors so the menu starts empty (admin can add their own)
-    let ids = flavors.keys().toArray();
-    for (id in ids.values()) {
-      flavors.remove(id);
+
+    // Seed the menu with 13 products if it is currently empty
+    if (flavors.size() == 0) {
+      let seedFlavors : [(Nat, IceCreamFlavor)] = [
+        (1, { id = 1; name = "BANANA SPLIT"; description = "VANILLA, CHOCOLATE, STRAWBERRY"; price = 100.0; category = "Classic"; imageUrl = ?"/assets/generated/banana-split.dim_400x400.jpg"; isAvailable = true; isFeatured = true }),
+        (2, { id = 2; name = "COLA FLOAT"; description = "WITH ICE-CREAM"; price = 110.0; category = "Classic"; imageUrl = ?"/assets/generated/cola-float.dim_400x400.jpg"; isAvailable = true; isFeatured = true }),
+        (3, { id = 3; name = "COLD COFFEE"; description = "With ICE-CREAM"; price = 110.0; category = "Classic"; imageUrl = ?"/assets/generated/cold-coffee-icecream.dim_400x400.jpg"; isAvailable = true; isFeatured = true }),
+        (4, { id = 4; name = "Chocolate"; description = "Rich chocolate ice cream."; price = 80.0; category = "Classic"; imageUrl = ?"/assets/generated/chocolate-icecream.dim_400x400.jpg"; isAvailable = true; isFeatured = true }),
+        (5, { id = 5; name = "FRESH LIME"; description = "SODA WITH MINT"; price = 40.0; category = "Classic"; imageUrl = ?"/assets/generated/fresh-lime-soda.dim_400x400.jpg"; isAvailable = true; isFeatured = true }),
+        (6, { id = 6; name = "Fruit Salad"; description = "With ice cream"; price = 120.0; category = "Classic"; imageUrl = ?"/assets/generated/fruit-salad-icecream.dim_400x400.jpg"; isAvailable = true; isFeatured = true }),
+        (7, { id = 7; name = "Hot Chocolate FUDGE"; description = "Rich hot chocolate fudge sundae."; price = 140.0; category = "Classic"; imageUrl = ?"/assets/generated/hot-chocolate-fudge.dim_400x400.jpg"; isAvailable = true; isFeatured = true }),
+        (8, { id = 8; name = "ORANGE BLOSSOM"; description = "MOCKTAIL"; price = 90.0; category = "Premium"; imageUrl = ?"/assets/generated/orange-blossom-mocktail.dim_400x400.jpg"; isAvailable = true; isFeatured = true }),
+        (9, { id = 9; name = "PINEAPPLE BLOSSOM"; description = "MOCKTAIL"; price = 70.0; category = "Premium"; imageUrl = ?"/assets/generated/pineapple-blossom-mocktail.dim_400x400.jpg"; isAvailable = true; isFeatured = true }),
+        (10, { id = 10; name = "Special of the Day"; description = "Our chef's seasonal creation — a limited-edition scoop made with the freshest ingredients of the season."; price = 130.0; category = "Seasonal"; imageUrl = ?"/assets/generated/special-of-the-day.dim_400x400.jpg"; isAvailable = true; isFeatured = true }),
+        (11, { id = 11; name = "Tutti Frutti"; description = "VANILLA, strawberry & Fresh Fruits"; price = 100.0; category = "Classic"; imageUrl = ?"/assets/generated/tutti-frutti.dim_400x400.jpg"; isAvailable = true; isFeatured = true }),
+        (12, { id = 12; name = "VANILLA"; description = "WITH HOT CHOCOLATE SAUCE"; price = 70.0; category = "Classic"; imageUrl = ?"/assets/generated/vanilla-hot-chocolate-sauce.dim_400x400.jpg"; isAvailable = true; isFeatured = true }),
+        (13, { id = 13; name = "Vanilla"; description = "Classic vanilla ice cream."; price = 60.0; category = "Classic"; imageUrl = ?"/assets/generated/vanilla-classic.dim_400x400.jpg"; isAvailable = true; isFeatured = true }),
+      ];
+      for ((k, v) in seedFlavors.values()) {
+        flavors.add(k, v);
+      };
+      nextId := 14;
     };
-    nextId := 1;
   };
 
   // Helper function

@@ -3,9 +3,13 @@ import { Input } from "@/components/ui/input";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useAllFlavors, useFlavorsByCategory } from "@/hooks/useQueries";
 import { cn } from "@/lib/utils";
+import { SEED_PRODUCT_IMAGES } from "@/utils/seedImages";
 import { Search } from "lucide-react";
 import { AnimatePresence, motion } from "motion/react";
 import { useState } from "react";
+
+// Preload seed images so the build pipeline keeps them in the bundle
+const _SEED_IMAGES = SEED_PRODUCT_IMAGES;
 
 const CATEGORIES = ["All", "Classic", "Vegan", "Seasonal", "Premium"];
 
