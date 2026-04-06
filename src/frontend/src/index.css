@@ -1,0 +1,126 @@
+@font-face {
+  font-family: "Nunito";
+  src: url("/assets/fonts/GeneralSans.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --radius: 1rem;
+
+    /* Scoops & Smiles color palette — OKLCH */
+    /* Cream background: #FFF6F0 */
+    --background: 0.978 0.012 55;
+    /* Deep text: #1F1A1C */
+    --foreground: 0.17 0.012 10;
+    /* Card white */
+    --card: 1 0 0;
+    --card-foreground: 0.17 0.012 10;
+    /* Popover */
+    --popover: 1 0 0;
+    --popover-foreground: 0.17 0.012 10;
+    /* Primary = bubblegum pink #FF4FA3 */
+    --primary: 0.64 0.22 355;
+    --primary-foreground: 1 0 0;
+    /* Secondary = aqua/mint #25D6C8 */
+    --secondary: 0.82 0.13 185;
+    --secondary-foreground: 0.17 0.012 10;
+    /* Muted = warm gray */
+    --muted: 0.96 0.008 55;
+    --muted-foreground: 0.52 0.03 20;
+    /* Accent = sunny yellow #FFD166 */
+    --accent: 0.88 0.16 85;
+    --accent-foreground: 0.17 0.012 10;
+    /* Destructive */
+    --destructive: 0.577 0.245 27.325;
+    --destructive-foreground: 1 0 0;
+    /* Border */
+    --border: 0.93 0.015 55;
+    --input: 0.93 0.015 55;
+    --ring: 0.64 0.22 355;
+
+    /* Chart colors */
+    --chart-1: 0.64 0.22 355;
+    --chart-2: 0.82 0.13 185;
+    --chart-3: 0.88 0.16 85;
+    --chart-4: 0.72 0.19 300;
+    --chart-5: 0.68 0.18 45;
+
+    /* Sidebar */
+    --sidebar: 0.978 0.012 55;
+    --sidebar-foreground: 0.17 0.012 10;
+    --sidebar-primary: 0.64 0.22 355;
+    --sidebar-primary-foreground: 1 0 0;
+    --sidebar-accent: 0.96 0.008 55;
+    --sidebar-accent-foreground: 0.17 0.012 10;
+    --sidebar-border: 0.93 0.015 55;
+    --sidebar-ring: 0.64 0.22 355;
+
+    /* Custom brand tokens */
+    --pink: 0.64 0.22 355;
+    --pink-light: 0.94 0.04 355;
+    --aqua: 0.82 0.13 185;
+    --aqua-light: 0.94 0.05 185;
+    --yellow: 0.88 0.16 85;
+    --yellow-light: 0.96 0.06 85;
+    --cream: 0.978 0.012 55;
+  }
+
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground;
+    font-family: "Nunito", sans-serif;
+  }
+
+  h1,
+  h2,
+  h3,
+  h4,
+  h5,
+  h6 {
+    font-family: "Nunito", sans-serif;
+    font-weight: 800;
+  }
+}
+
+@layer utilities {
+  .gradient-pink {
+    background: linear-gradient(
+      135deg,
+      oklch(0.64 0.22 355),
+      oklch(0.68 0.22 20)
+    );
+  }
+  .gradient-aqua {
+    background: linear-gradient(
+      135deg,
+      oklch(0.82 0.13 185),
+      oklch(0.78 0.15 200)
+    );
+  }
+  .gradient-hero {
+    background: linear-gradient(
+      160deg,
+      oklch(0.978 0.012 55) 0%,
+      oklch(0.97 0.025 15) 100%
+    );
+  }
+  .shadow-candy {
+    box-shadow: 0 10px 30px oklch(0.64 0.22 355 / 0.14);
+  }
+  .shadow-candy-lg {
+    box-shadow: 0 20px 50px oklch(0.64 0.22 355 / 0.18);
+  }
+  .blob-shape {
+    border-radius: 60% 40% 55% 45% / 55% 45% 55% 45%;
+  }
+}
