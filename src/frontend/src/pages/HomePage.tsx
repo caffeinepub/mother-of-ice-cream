@@ -3,7 +3,7 @@ import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { useFeaturedFlavors } from "@/hooks/useQueries";
 import { Link } from "@tanstack/react-router";
-import { ArrowRight, Leaf, Play, Star, Truck } from "lucide-react";
+import { ArrowRight, Leaf, MapPin, Play, Star, Truck } from "lucide-react";
 import { motion } from "motion/react";
 import { useRef, useState } from "react";
 
@@ -143,6 +143,26 @@ const FALLBACK_FLAVORS = [
     isFeatured: true,
   },
 ];
+
+function PartyOrderBanner() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className="w-full py-3 px-4 text-center font-black text-white text-sm sm:text-base tracking-wide"
+      style={{
+        background:
+          "linear-gradient(90deg, oklch(0.58 0.24 20) 0%, oklch(0.65 0.22 355) 40%, oklch(0.72 0.20 45) 100%)",
+      }}
+      data-ocid="home.section"
+    >
+      🎉 We are currently only taking{" "}
+      <span className="underline underline-offset-2">PARTY ORDERS</span> —
+      Contact us to place your order!
+    </motion.div>
+  );
+}
 
 function VideoSection() {
   const videoRef = useRef<HTMLVideoElement>(null);
@@ -297,6 +317,140 @@ function VideoSection() {
   );
 }
 
+function ShopShowcaseSection() {
+  return (
+    <section className="py-20 bg-white relative overflow-hidden">
+      {/* Subtle background decoration */}
+      <div
+        className="absolute inset-0 pointer-events-none"
+        style={{
+          background:
+            "radial-gradient(ellipse at 80% 50%, oklch(0.97 0.03 15 / 0.6), transparent 60%)",
+        }}
+      />
+
+      <div className="max-w-6xl mx-auto px-6 relative z-10">
+        <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
+          {/* Image side */}
+          <motion.div
+            initial={{ opacity: 0, x: -40 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.8, ease: "easeOut" }}
+            className="relative"
+          >
+            {/* Glow behind image */}
+            <div
+              className="absolute -inset-3 rounded-3xl blur-2xl opacity-30"
+              style={{
+                background:
+                  "linear-gradient(135deg, oklch(0.64 0.22 355), oklch(0.88 0.16 85))",
+              }}
+            />
+            <div className="relative rounded-3xl overflow-hidden shadow-2xl border-4 border-white">
+              <img
+                src="/assets/generated/mother-of-icecream-shop.dim_800x500.jpg"
+                alt="Mother of Ice-cream shop in Kolkata — vibrant display of handcrafted ice cream flavors"
+                className="w-full h-auto object-cover"
+                loading="lazy"
+              />
+              {/* Floating badge */}
+              <div
+                className="absolute top-4 left-4 px-4 py-2 rounded-full text-white text-sm font-black shadow-lg"
+                style={{
+                  background:
+                    "linear-gradient(135deg, oklch(0.64 0.22 355), oklch(0.72 0.20 45))",
+                }}
+              >
+                🏆 Kolkata's Favourite
+              </div>
+            </div>
+          </motion.div>
+
+          {/* Text side */}
+          <motion.div
+            initial={{ opacity: 0, x: 40 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true, amount: 0.2 }}
+            transition={{ duration: 0.8, ease: "easeOut", delay: 0.15 }}
+            className="flex flex-col gap-6"
+          >
+            <div>
+              <p
+                className="text-sm font-black uppercase tracking-widest mb-3"
+                style={{
+                  background:
+                    "linear-gradient(135deg, oklch(0.64 0.22 355), oklch(0.72 0.20 45))",
+                  WebkitBackgroundClip: "text",
+                  WebkitTextFillColor: "transparent",
+                  backgroundClip: "text",
+                }}
+              >
+                🍨 Visit Our Shop
+              </p>
+              <h2 className="text-4xl lg:text-5xl font-black text-foreground leading-tight">
+                Experience the Magic of{" "}
+                <span
+                  style={{
+                    background:
+                      "linear-gradient(135deg, oklch(0.64 0.22 355), oklch(0.82 0.13 185))",
+                    WebkitBackgroundClip: "text",
+                    WebkitTextFillColor: "transparent",
+                    backgroundClip: "text",
+                  }}
+                >
+                  Mother of Ice-cream
+                </span>
+              </h2>
+            </div>
+
+            <p className="text-muted-foreground text-lg leading-relaxed">
+              Nestled in the heart of Kolkata, our shop is a joyful celebration
+              of flavour, colour, and happiness. Every scoop is made fresh daily
+              with the finest local ingredients — because you deserve nothing
+              less than the best.
+            </p>
+
+            <div className="flex flex-col gap-3">
+              {[
+                { emoji: "🌟", text: "Freshly churned every morning" },
+                { emoji: "🎉", text: "Perfect for parties and celebrations" },
+                {
+                  emoji: "🍦",
+                  text: "13+ handcrafted flavours to choose from",
+                },
+              ].map((item) => (
+                <div key={item.text} className="flex items-center gap-3">
+                  <span className="text-xl">{item.emoji}</span>
+                  <span className="text-foreground font-semibold">
+                    {item.text}
+                  </span>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center gap-2 text-muted-foreground text-sm font-semibold">
+              <MapPin className="w-4 h-4 text-primary" />
+              Mallickpur Habibchauk Chauk, Kolkata
+            </div>
+
+            <Button
+              asChild
+              size="lg"
+              className="rounded-pill gradient-pink border-0 text-white font-bold px-8 shadow-candy hover:shadow-candy-lg hover:scale-105 transition-all duration-200 self-start"
+              data-ocid="home.secondary_button"
+            >
+              <Link to="/contact">
+                Get in Touch <ArrowRight className="ml-2 w-4 h-4" />
+              </Link>
+            </Button>
+          </motion.div>
+        </div>
+      </div>
+    </section>
+  );
+}
+
 export default function HomePage() {
   const { data: featuredFlavors, isLoading } = useFeaturedFlavors();
   const displayFlavors =
@@ -306,6 +460,9 @@ export default function HomePage() {
 
   return (
     <div className="overflow-hidden">
+      {/* ===== PARTY ORDER ANNOUNCEMENT BANNER ===== */}
+      <PartyOrderBanner />
+
       {/* ===== HERO ===== */}
       <section className="gradient-hero relative min-h-[90vh] flex items-center">
         {SPRINKLES.map((s, i) => (
@@ -464,6 +621,9 @@ export default function HomePage() {
 
       {/* ===== VIDEO SECTION ===== */}
       <VideoSection />
+
+      {/* ===== SHOP SHOWCASE ===== */}
+      <ShopShowcaseSection />
 
       {/* ===== FEATURED FLAVORS ===== */}
       <section className="py-20 bg-white" id="featured">

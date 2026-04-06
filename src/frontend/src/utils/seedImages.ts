@@ -14,4 +14,5 @@ export const SEED_PRODUCT_IMAGES = [
   "/assets/generated/tutti-frutti.dim_400x400.jpg",
   "/assets/generated/vanilla-hot-chocolate-sauce.dim_400x400.jpg",
   "/assets/generated/vanilla-classic.dim_400x400.jpg",
+  "/assets/generated/mother-of-icecream-shop.dim_800x500.jpg",
 ] as const;

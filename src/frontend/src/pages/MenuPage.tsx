@@ -13,6 +13,26 @@ const _SEED_IMAGES = SEED_PRODUCT_IMAGES;
 
 const CATEGORIES = ["All", "Classic", "Vegan", "Seasonal", "Premium"];
 
+function PartyOrderBanner() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: -20 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.5, ease: "easeOut" }}
+      className="w-full py-3 px-4 text-center font-black text-white text-sm sm:text-base tracking-wide"
+      style={{
+        background:
+          "linear-gradient(90deg, oklch(0.58 0.24 20) 0%, oklch(0.65 0.22 355) 40%, oklch(0.72 0.20 45) 100%)",
+      }}
+      data-ocid="menu.section"
+    >
+      🎉 Currently accepting{" "}
+      <span className="underline underline-offset-2">PARTY ORDERS</span> only —
+      Call us to place your order!
+    </motion.div>
+  );
+}
+
 export default function MenuPage() {
   const [activeCategory, setActiveCategory] = useState("All");
   const [search, setSearch] = useState("");
@@ -35,6 +55,9 @@ export default function MenuPage() {
 
   return (
     <div className="bg-background min-h-screen">
+      {/* ===== PARTY ORDER ANNOUNCEMENT BANNER ===== */}
+      <PartyOrderBanner />
+
       {/* Header */}
       <section
         className="py-16 text-center relative overflow-hidden"
