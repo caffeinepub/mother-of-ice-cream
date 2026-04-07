@@ -132,12 +132,12 @@ export interface IceCreamFlavorUpdate {
 }
 export interface Order {
     id: bigint;
-    razorpayPaymentId: string;
     customerName: string;
     status: string;
     deliveryAddress: string;
+    utrReference: string;
+    paymentMethod: string;
     customerPhone: string;
-    razorpayOrderId: string;
     totalAmount: number;
     timestamp: Time;
     items: Array<OrderItem>;
@@ -145,38 +145,28 @@ export interface Order {
 export interface UserProfile {
     name: string;
 }
-export enum UserRole {
-    admin = "admin",
-    user = "user",
-    guest = "guest"
-}
 export interface backendInterface {
-    _initializeAccessControlWithSecret(userSecret: string): Promise<void>;
     addFlavor(flavorInput: IceCreamFlavorInput): Promise<bigint>;
-    assignCallerUserRole(user: Principal, role: UserRole): Promise<void>;
-    deleteContactMessage(timestamp: Time): Promise<void>;
     clearAllFlavors(): Promise<void>;
-    seedDefaultFlavors(): Promise<void>;
+    deleteContactMessage(timestamp: Time): Promise<void>;
     deleteFlavor(id: bigint): Promise<void>;
     deleteOrder(id: bigint): Promise<void>;
     getAllContactMessages(): Promise<Array<ContactMessage>>;
     getAllFlavors(): Promise<Array<IceCreamFlavor>>;
     getAvailableFlavors(): Promise<Array<IceCreamFlavor>>;
     getCallerUserProfile(): Promise<UserProfile | null>;
-    getCallerUserRole(): Promise<UserRole>;
     getFeaturedFlavors(): Promise<Array<IceCreamFlavor>>;
     getFlavor(id: bigint): Promise<IceCreamFlavor>;
     getFlavorsByCategory(category: string): Promise<Array<IceCreamFlavor>>;
     getOrders(): Promise<Array<Order>>;
     getOrdersByPhone(phone: string): Promise<Array<Order>>;
-    getRazorpayKeyId(): Promise<string | null>;
     getUpiId(): Promise<string | null>;
-    getUserProfile(user: Principal): Promise<UserProfile | null>;
+    getUserProfile(arg0: Principal): Promise<UserProfile | null>;
     isCallerAdmin(): Promise<boolean>;
-    placeOrder(customerName: string, customerPhone: string, deliveryAddress: string, items: Array<OrderItem>, totalAmount: number, razorpayOrderId: string, razorpayPaymentId: string): Promise<bigint>;
+    placeOrder(customerName: string, customerPhone: string, deliveryAddress: string, items: Array<OrderItem>, totalAmount: number, utrReference: string, paymentMethod: string): Promise<bigint>;
     saveCallerUserProfile(profile: UserProfile): Promise<void>;
     searchFlavors(searchTerm: string): Promise<Array<IceCreamFlavor>>;
-    setRazorpayKeyId(key: string): Promise<void>;
+    seedDefaultFlavors(): Promise<bigint>;
     setUpiId(id: string): Promise<void>;
     submitContactMessage(name: string, email: string, message: string): Promise<void>;
     toggleAvailability(id: bigint): Promise<void>;
@@ -184,23 +174,9 @@ export interface backendInterface {
     updateFlavor(id: bigint, input: IceCreamFlavorUpdate): Promise<void>;
     updateOrderStatus(id: bigint, status: string): Promise<void>;
 }
-import type { IceCreamFlavor as _IceCreamFlavor, IceCreamFlavorInput as _IceCreamFlavorInput, IceCreamFlavorUpdate as _IceCreamFlavorUpdate, UserProfile as _UserProfile, UserRole as _UserRole } from "./declarations/backend.did.d.ts";
+import type { IceCreamFlavor as _IceCreamFlavor, IceCreamFlavorInput as _IceCreamFlavorInput, IceCreamFlavorUpdate as _IceCreamFlavorUpdate, UserProfile as _UserProfile } from "./declarations/backend.did.d.ts";
 export class Backend implements backendInterface {
     constructor(private actor: ActorSubclass<_SERVICE>, private _uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, private _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, private processError?: (error: unknown) => never){}
-    async _initializeAccessControlWithSecret(arg0: string): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor._initializeAccessControlWithSecret(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor._initializeAccessControlWithSecret(arg0);
-            return result;
-        }
-    }
     async addFlavor(arg0: IceCreamFlavorInput): Promise<bigint> {
         if (this.processError) {
             try {
@@ -212,34 +188,6 @@ export class Backend implements backendInterface {
             }
         } else {
             const result = await this.actor.addFlavor(to_candid_IceCreamFlavorInput_n1(this._uploadFile, this._downloadFile, arg0));
-            return result;
-        }
-    }
-    async assignCallerUserRole(arg0: Principal, arg1: UserRole): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n3(this._uploadFile, this._downloadFile, arg1));
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.assignCallerUserRole(arg0, to_candid_UserRole_n3(this._uploadFile, this._downloadFile, arg1));
-            return result;
-        }
-    }
-    async deleteContactMessage(arg0: Time): Promise<void> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.deleteContactMessage(arg0);
-                return result;
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.deleteContactMessage(arg0);
             return result;
         }
     }
@@ -257,17 +205,17 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async seedDefaultFlavors(): Promise<void> {
+    async deleteContactMessage(arg0: Time): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.seedDefaultFlavors();
+                const result = await this.actor.deleteContactMessage(arg0);
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.seedDefaultFlavors();
+            const result = await this.actor.deleteContactMessage(arg0);
             return result;
         }
     }
@@ -317,98 +265,84 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.getAllFlavors();
-                return from_candid_vec_n5(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n3(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getAllFlavors();
-            return from_candid_vec_n5(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n3(this._uploadFile, this._downloadFile, result);
         }
     }
     async getAvailableFlavors(): Promise<Array<IceCreamFlavor>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getAvailableFlavors();
-                return from_candid_vec_n5(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n3(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getAvailableFlavors();
-            return from_candid_vec_n5(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n3(this._uploadFile, this._downloadFile, result);
         }
     }
     async getCallerUserProfile(): Promise<UserProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getCallerUserProfile();
-                return from_candid_opt_n9(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n7(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getCallerUserProfile();
-            return from_candid_opt_n9(this._uploadFile, this._downloadFile, result);
-        }
-    }
-    async getCallerUserRole(): Promise<UserRole> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getCallerUserRole();
-                return from_candid_UserRole_n10(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getCallerUserRole();
-            return from_candid_UserRole_n10(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n7(this._uploadFile, this._downloadFile, result);
         }
     }
     async getFeaturedFlavors(): Promise<Array<IceCreamFlavor>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getFeaturedFlavors();
-                return from_candid_vec_n5(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n3(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getFeaturedFlavors();
-            return from_candid_vec_n5(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n3(this._uploadFile, this._downloadFile, result);
         }
     }
     async getFlavor(arg0: bigint): Promise<IceCreamFlavor> {
         if (this.processError) {
             try {
                 const result = await this.actor.getFlavor(arg0);
-                return from_candid_IceCreamFlavor_n6(this._uploadFile, this._downloadFile, result);
+                return from_candid_IceCreamFlavor_n4(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getFlavor(arg0);
-            return from_candid_IceCreamFlavor_n6(this._uploadFile, this._downloadFile, result);
+            return from_candid_IceCreamFlavor_n4(this._uploadFile, this._downloadFile, result);
         }
     }
     async getFlavorsByCategory(arg0: string): Promise<Array<IceCreamFlavor>> {
         if (this.processError) {
             try {
                 const result = await this.actor.getFlavorsByCategory(arg0);
-                return from_candid_vec_n5(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n3(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getFlavorsByCategory(arg0);
-            return from_candid_vec_n5(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n3(this._uploadFile, this._downloadFile, result);
         }
     }
     async getOrders(): Promise<Array<Order>> {
@@ -439,46 +373,32 @@ export class Backend implements backendInterface {
             return result;
         }
     }
-    async getRazorpayKeyId(): Promise<string | null> {
-        if (this.processError) {
-            try {
-                const result = await this.actor.getRazorpayKeyId();
-                return from_candid_opt_n8(this._uploadFile, this._downloadFile, result);
-            } catch (e) {
-                this.processError(e);
-                throw new Error("unreachable");
-            }
-        } else {
-            const result = await this.actor.getRazorpayKeyId();
-            return from_candid_opt_n8(this._uploadFile, this._downloadFile, result);
-        }
-    }
     async getUpiId(): Promise<string | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getUpiId();
-                return from_candid_opt_n8(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n6(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getUpiId();
-            return from_candid_opt_n8(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n6(this._uploadFile, this._downloadFile, result);
         }
     }
     async getUserProfile(arg0: Principal): Promise<UserProfile | null> {
         if (this.processError) {
             try {
                 const result = await this.actor.getUserProfile(arg0);
-                return from_candid_opt_n9(this._uploadFile, this._downloadFile, result);
+                return from_candid_opt_n7(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.getUserProfile(arg0);
-            return from_candid_opt_n9(this._uploadFile, this._downloadFile, result);
+            return from_candid_opt_n7(this._uploadFile, this._downloadFile, result);
         }
     }
     async isCallerAdmin(): Promise<boolean> {
@@ -527,27 +447,27 @@ export class Backend implements backendInterface {
         if (this.processError) {
             try {
                 const result = await this.actor.searchFlavors(arg0);
-                return from_candid_vec_n5(this._uploadFile, this._downloadFile, result);
+                return from_candid_vec_n3(this._uploadFile, this._downloadFile, result);
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
             const result = await this.actor.searchFlavors(arg0);
-            return from_candid_vec_n5(this._uploadFile, this._downloadFile, result);
+            return from_candid_vec_n3(this._uploadFile, this._downloadFile, result);
         }
     }
-    async setRazorpayKeyId(arg0: string): Promise<void> {
+    async seedDefaultFlavors(): Promise<bigint> {
         if (this.processError) {
             try {
-                const result = await this.actor.setRazorpayKeyId(arg0);
+                const result = await this.actor.seedDefaultFlavors();
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.setRazorpayKeyId(arg0);
+            const result = await this.actor.seedDefaultFlavors();
             return result;
         }
     }
@@ -610,14 +530,14 @@ export class Backend implements backendInterface {
     async updateFlavor(arg0: bigint, arg1: IceCreamFlavorUpdate): Promise<void> {
         if (this.processError) {
             try {
-                const result = await this.actor.updateFlavor(arg0, to_candid_IceCreamFlavorUpdate_n12(this._uploadFile, this._downloadFile, arg1));
+                const result = await this.actor.updateFlavor(arg0, to_candid_IceCreamFlavorUpdate_n8(this._uploadFile, this._downloadFile, arg1));
                 return result;
             } catch (e) {
                 this.processError(e);
                 throw new Error("unreachable");
             }
         } else {
-            const result = await this.actor.updateFlavor(arg0, to_candid_IceCreamFlavorUpdate_n12(this._uploadFile, this._downloadFile, arg1));
+            const result = await this.actor.updateFlavor(arg0, to_candid_IceCreamFlavorUpdate_n8(this._uploadFile, this._downloadFile, arg1));
             return result;
         }
     }
@@ -636,19 +556,16 @@ export class Backend implements backendInterface {
         }
     }
 }
-function from_candid_IceCreamFlavor_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _IceCreamFlavor): IceCreamFlavor {
-    return from_candid_record_n7(_uploadFile, _downloadFile, value);
+function from_candid_IceCreamFlavor_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _IceCreamFlavor): IceCreamFlavor {
+    return from_candid_record_n5(_uploadFile, _downloadFile, value);
 }
-function from_candid_UserRole_n10(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: _UserRole): UserRole {
-    return from_candid_variant_n11(_uploadFile, _downloadFile, value);
-}
-function from_candid_opt_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [string]): string | null {
+function from_candid_opt_n6(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [string]): string | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_opt_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
+function from_candid_opt_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: [] | [_UserProfile]): UserProfile | null {
     return value.length === 0 ? null : value[0];
 }
-function from_candid_record_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+function from_candid_record_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     id: bigint;
     name: string;
     isAvailable: boolean;
@@ -672,59 +589,20 @@ function from_candid_record_n7(_uploadFile: (file: ExternalBlob) => Promise<Uint
         name: value.name,
         isAvailable: value.isAvailable,
         description: value.description,
-        imageUrl: record_opt_to_undefined(from_candid_opt_n8(_uploadFile, _downloadFile, value.imageUrl)),
+        imageUrl: record_opt_to_undefined(from_candid_opt_n6(_uploadFile, _downloadFile, value.imageUrl)),
         isFeatured: value.isFeatured,
         category: value.category,
         price: value.price
     };
 }
-function from_candid_variant_n11(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    admin: null;
-} | {
-    user: null;
-} | {
-    guest: null;
-}): UserRole {
-    return "admin" in value ? UserRole.admin : "user" in value ? UserRole.user : "guest" in value ? UserRole.guest : value;
-}
-function from_candid_vec_n5(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_IceCreamFlavor>): Array<IceCreamFlavor> {
-    return value.map((x)=>from_candid_IceCreamFlavor_n6(_uploadFile, _downloadFile, x));
+function from_candid_vec_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: Array<_IceCreamFlavor>): Array<IceCreamFlavor> {
+    return value.map((x)=>from_candid_IceCreamFlavor_n4(_uploadFile, _downloadFile, x));
 }
 function to_candid_IceCreamFlavorInput_n1(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: IceCreamFlavorInput): _IceCreamFlavorInput {
     return to_candid_record_n2(_uploadFile, _downloadFile, value);
 }
-function to_candid_IceCreamFlavorUpdate_n12(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: IceCreamFlavorUpdate): _IceCreamFlavorUpdate {
-    return to_candid_record_n13(_uploadFile, _downloadFile, value);
-}
-function to_candid_UserRole_n3(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): _UserRole {
-    return to_candid_variant_n4(_uploadFile, _downloadFile, value);
-}
-function to_candid_record_n13(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
-    name?: string;
-    isAvailable?: boolean;
-    description?: string;
-    imageUrl?: string;
-    isFeatured?: boolean;
-    category?: string;
-    price?: number;
-}): {
-    name: [] | [string];
-    isAvailable: [] | [boolean];
-    description: [] | [string];
-    imageUrl: [] | [string];
-    isFeatured: [] | [boolean];
-    category: [] | [string];
-    price: [] | [number];
-} {
-    return {
-        name: value.name ? candid_some(value.name) : candid_none(),
-        isAvailable: value.isAvailable ? candid_some(value.isAvailable) : candid_none(),
-        description: value.description ? candid_some(value.description) : candid_none(),
-        imageUrl: value.imageUrl ? candid_some(value.imageUrl) : candid_none(),
-        isFeatured: value.isFeatured ? candid_some(value.isFeatured) : candid_none(),
-        category: value.category ? candid_some(value.category) : candid_none(),
-        price: value.price ? candid_some(value.price) : candid_none()
-    };
+function to_candid_IceCreamFlavorUpdate_n8(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: IceCreamFlavorUpdate): _IceCreamFlavorUpdate {
+    return to_candid_record_n9(_uploadFile, _downloadFile, value);
 }
 function to_candid_record_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
     name: string;
@@ -753,20 +631,32 @@ function to_candid_record_n2(_uploadFile: (file: ExternalBlob) => Promise<Uint8A
         price: value.price
     };
 }
-function to_candid_variant_n4(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: UserRole): {
-    admin: null;
-} | {
-    user: null;
-} | {
-    guest: null;
+function to_candid_record_n9(_uploadFile: (file: ExternalBlob) => Promise<Uint8Array>, _downloadFile: (file: Uint8Array) => Promise<ExternalBlob>, value: {
+    name?: string;
+    isAvailable?: boolean;
+    description?: string;
+    imageUrl?: string;
+    isFeatured?: boolean;
+    category?: string;
+    price?: number;
+}): {
+    name: [] | [string];
+    isAvailable: [] | [boolean];
+    description: [] | [string];
+    imageUrl: [] | [string];
+    isFeatured: [] | [boolean];
+    category: [] | [string];
+    price: [] | [number];
 } {
-    return value == UserRole.admin ? {
-        admin: null
-    } : value == UserRole.user ? {
-        user: null
-    } : value == UserRole.guest ? {
-        guest: null
-    } : value;
+    return {
+        name: value.name ? candid_some(value.name) : candid_none(),
+        isAvailable: value.isAvailable ? candid_some(value.isAvailable) : candid_none(),
+        description: value.description ? candid_some(value.description) : candid_none(),
+        imageUrl: value.imageUrl ? candid_some(value.imageUrl) : candid_none(),
+        isFeatured: value.isFeatured ? candid_some(value.isFeatured) : candid_none(),
+        category: value.category ? candid_some(value.category) : candid_none(),
+        price: value.price ? candid_some(value.price) : candid_none()
+    };
 }
 export interface CreateActorOptions {
     agent?: Agent;

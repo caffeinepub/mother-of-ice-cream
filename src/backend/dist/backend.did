@@ -1,0 +1,91 @@
+type UserProfile = record {name: text;};
+type Time = int;
+type OrderItem = 
+ record {
+   flavorId: nat;
+   flavorName: text;
+   price: float64;
+   quantity: nat;
+ };
+type Order = 
+ record {
+   customerName: text;
+   customerPhone: text;
+   deliveryAddress: text;
+   id: nat;
+   items: vec OrderItem;
+   paymentMethod: text;
+   status: text;
+   timestamp: Time;
+   totalAmount: float64;
+   utrReference: text;
+ };
+type IceCreamFlavorUpdate = 
+ record {
+   category: opt text;
+   description: opt text;
+   imageUrl: opt text;
+   isAvailable: opt bool;
+   isFeatured: opt bool;
+   name: opt text;
+   price: opt float64;
+ };
+type IceCreamFlavorInput = 
+ record {
+   category: text;
+   description: text;
+   imageUrl: opt text;
+   isAvailable: bool;
+   isFeatured: bool;
+   name: text;
+   price: float64;
+ };
+type IceCreamFlavor = 
+ record {
+   category: text;
+   description: text;
+   id: nat;
+   imageUrl: opt text;
+   isAvailable: bool;
+   isFeatured: bool;
+   name: text;
+   price: float64;
+ };
+type ContactMessage = 
+ record {
+   email: text;
+   message: text;
+   name: text;
+   timestamp: Time;
+ };
+service : {
+  addFlavor: (flavorInput: IceCreamFlavorInput) -> (nat);
+  clearAllFlavors: () -> ();
+  deleteContactMessage: (timestamp: Time) -> ();
+  deleteFlavor: (id: nat) -> ();
+  deleteOrder: (id: nat) -> ();
+  getAllContactMessages: () -> (vec ContactMessage) query;
+  getAllFlavors: () -> (vec IceCreamFlavor) query;
+  getAvailableFlavors: () -> (vec IceCreamFlavor) query;
+  getCallerUserProfile: () -> (opt UserProfile) query;
+  getFeaturedFlavors: () -> (vec IceCreamFlavor) query;
+  getFlavor: (id: nat) -> (IceCreamFlavor) query;
+  getFlavorsByCategory: (category: text) -> (vec IceCreamFlavor) query;
+  getOrders: () -> (vec Order) query;
+  getOrdersByPhone: (phone: text) -> (vec Order) query;
+  getUpiId: () -> (opt text) query;
+  getUserProfile: (principal) -> (opt UserProfile) query;
+  isCallerAdmin: () -> (bool) query;
+  placeOrder: (customerName: text, customerPhone: text, deliveryAddress:
+   text, items: vec OrderItem, totalAmount: float64, utrReference: text,
+   paymentMethod: text) -> (nat);
+  saveCallerUserProfile: (profile: UserProfile) -> ();
+  searchFlavors: (searchTerm: text) -> (vec IceCreamFlavor) query;
+  seedDefaultFlavors: () -> (nat);
+  setUpiId: (id: text) -> ();
+  submitContactMessage: (name: text, email: text, message: text) -> ();
+  toggleAvailability: (id: nat) -> ();
+  toggleFeatured: (id: nat) -> ();
+  updateFlavor: (id: nat, input: IceCreamFlavorUpdate) -> ();
+  updateOrderStatus: (id: nat, status: text) -> ();
+}

@@ -1,5 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import type {
+  Order as BackendOrder,
+  OrderItem as BackendOrderItem,
   ContactMessage,
   IceCreamFlavor,
   IceCreamFlavorInput,
@@ -14,7 +16,6 @@ export type {
   ContactMessage,
 };
 
-// Order types (from backend.did.d.ts)
 export interface OrderItem {
   flavorId: bigint;
   flavorName: string;
@@ -22,18 +23,7 @@ export interface OrderItem {
   price: number;
 }
 
-export interface Order {
-  id: bigint;
-  customerName: string;
-  customerPhone: string;
-  deliveryAddress: string;
-  items: OrderItem[];
-  totalAmount: number;
-  status: string;
-  timestamp: bigint;
-  razorpayOrderId: string;
-  razorpayPaymentId: string;
-}
+export type Order = BackendOrder;
 
 export function useAllFlavors() {
   const { actor, isFetching: actorFetching } = useActor();
@@ -48,7 +38,6 @@ export function useAllFlavors() {
 
   return {
     ...query,
-    // Treat as loading while actor is still initializing
     isLoading: actorFetching || query.isLoading,
   };
 }
@@ -222,7 +211,6 @@ export function useSubmitContact() {
   });
 }
 
-// Order hooks
 export function usePlaceOrder() {
   const { actor } = useActor();
   const queryClient = useQueryClient();
@@ -233,16 +221,16 @@ export function usePlaceOrder() {
       deliveryAddress,
       items,
       totalAmount,
-      razorpayOrderId,
-      razorpayPaymentId,
+      utrReference,
+      paymentMethod,
     }: {
       customerName: string;
       customerPhone: string;
       deliveryAddress: string;
-      items: OrderItem[];
+      items: BackendOrderItem[];
       totalAmount: number;
-      razorpayOrderId: string;
-      razorpayPaymentId: string;
+      utrReference: string;
+      paymentMethod: string;
     }) => {
       if (!actor) throw new Error("Not connected");
       return actor.placeOrder(
@@ -251,8 +239,8 @@ export function usePlaceOrder() {
         deliveryAddress,
         items,
         totalAmount,
-        razorpayOrderId,
-        razorpayPaymentId,
+        utrReference,
+        paymentMethod,
       );
     },
     onSuccess: () => {
@@ -276,34 +264,6 @@ export function useGetOrders() {
     ...query,
     isLoading: actorFetching || query.isLoading,
   };
-}
-
-export function useGetRazorpayKey() {
-  const { actor, isFetching } = useActor();
-  return useQuery<string | null>({
-    queryKey: ["razorpayKey"],
-    queryFn: async () => {
-      if (!actor) return null;
-      const result = await actor.getRazorpayKeyId();
-      // getRazorpayKeyId returns string | null directly
-      return result ?? null;
-    },
-    enabled: !!actor && !isFetching,
-  });
-}
-
-export function useSetRazorpayKey() {
-  const { actor } = useActor();
-  const queryClient = useQueryClient();
-  return useMutation({
-    mutationFn: async (key: string) => {
-      if (!actor) throw new Error("Not connected");
-      return actor.setRazorpayKeyId(key);
-    },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ["razorpayKey"] });
-    },
-  });
 }
 
 export function useUpdateOrderStatus() {

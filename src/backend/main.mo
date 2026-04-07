@@ -1,22 +1,15 @@
 import Map "mo:core/Map";
 import Text "mo:core/Text";
 import Nat "mo:core/Nat";
-import Iter "mo:core/Iter";
 import List "mo:core/List";
 import Runtime "mo:core/Runtime";
 import Order "mo:core/Order";
 import Time "mo:core/Time";
 import Float "mo:core/Float";
 import Principal "mo:core/Principal";
-import MixinAuthorization "authorization/MixinAuthorization";
-import AccessControl "authorization/access-control";
 
 
 actor {
-  // Authorization
-  let accessControlState = AccessControl.initState();
-  include MixinAuthorization(accessControlState);
-
   module IceCreamFlavor {
     public func compare(flavor1 : IceCreamFlavor, flavor2 : IceCreamFlavor) : Order.Order {
       Nat.compare(flavor1.id, flavor2.id);
@@ -52,7 +45,8 @@ actor {
     price : Float;
   };
 
-  public type Order = {
+  // Old order type - matches previous stable shape for compatibility
+  type OrderV1 = {
     id : Nat;
     customerName : Text;
     customerPhone : Text;
@@ -63,6 +57,19 @@ actor {
     timestamp : Time.Time;
     razorpayOrderId : Text;
     razorpayPaymentId : Text;
+  };
+
+  public type Order = {
+    id : Nat;
+    customerName : Text;
+    customerPhone : Text;
+    deliveryAddress : Text;
+    items : [OrderItem];
+    totalAmount : Float;
+    status : Text;
+    timestamp : Time.Time;
+    utrReference : Text;
+    paymentMethod : Text;
   };
 
   public type IceCreamFlavorInput = {
@@ -89,24 +96,45 @@ actor {
     name : Text;
   };
 
-  // Explicit migration: preserve old stable sampleFlavors so M0169 is not triggered.
+  // Legacy user role type — must match old stable accessControlState
+  type UserRole = { #admin; #guest; #user };
+
+  // Migration stubs for removed stable variables — must match old types exactly
+  // accessControlState was non-optional in old version, keep as non-optional for compat
+  stable var accessControlState : {
+    var adminAssigned : Bool;
+    userRoles : Map.Map<Principal, UserRole>;
+  } = {
+    var adminAssigned = false;
+    userRoles = Map.empty<Principal, UserRole>();
+  };
+
+  // Legacy orders map — matches old stable 'orders' type for upgrade compatibility
+  // (--default-persistent-actors makes let declarations implicitly stable)
+  let orders : Map.Map<Nat, OrderV1> = Map.empty<Nat, OrderV1>();
+
+  // Explicit migration: preserve old stable vars
   stable var sampleFlavors : [IceCreamFlavor] = [];
 
-  // Stable state - persists across upgrades
+  // Migration stub: razorpayKeyId was removed; keep declaration so stable
+  // compatibility check passes — value is never read or written.
+  stable var razorpayKeyId : ?Text = null;
+
+  // Stable state
   stable var nextId : Nat = 22;
   stable var nextOrderId : Nat = 1;
-  stable var razorpayKeyId : ?Text = null;
   stable var upiId : ?Text = ?"8961492669@jio";
 
-  // Stable backing arrays for Maps/Lists
+  // Stable backing arrays
   stable var flavorsEntries : [(Nat, IceCreamFlavor)] = [];
-  stable var ordersEntries : [(Nat, Order)] = [];
+  stable var ordersEntries : [(Nat, OrderV1)] = [];
+  stable var ordersEntriesV2 : [(Nat, Order)] = [];
   stable var contactMessagesArray : [ContactMessage] = [];
   stable var userProfilesEntries : [(Principal, UserProfile)] = [];
 
-  // Runtime Maps rebuilt from stable storage
+  // Runtime Maps
   let flavors = Map.empty<Nat, IceCreamFlavor>();
-  let orders = Map.empty<Nat, Order>();
+  let ordersV2 = Map.empty<Nat, Order>();
   let contactMessages = List.empty<ContactMessage>();
   let userProfiles = Map.empty<Principal, UserProfile>();
 
@@ -114,8 +142,41 @@ actor {
   for ((k, v) in flavorsEntries.values()) {
     flavors.add(k, v);
   };
+  // Migrate old orders (V1) to V2
+  for ((k, v) in orders.entries()) {
+    let migrated : Order = {
+      id = v.id;
+      customerName = v.customerName;
+      customerPhone = v.customerPhone;
+      deliveryAddress = v.deliveryAddress;
+      items = v.items;
+      totalAmount = v.totalAmount;
+      status = v.status;
+      timestamp = v.timestamp;
+      utrReference = v.razorpayPaymentId;
+      paymentMethod = "online";
+    };
+    ordersV2.add(k, migrated);
+  };
+  // Migrate legacy ordersEntries (V1 array) to V2
   for ((k, v) in ordersEntries.values()) {
-    orders.add(k, v);
+    let migrated : Order = {
+      id = v.id;
+      customerName = v.customerName;
+      customerPhone = v.customerPhone;
+      deliveryAddress = v.deliveryAddress;
+      items = v.items;
+      totalAmount = v.totalAmount;
+      status = v.status;
+      timestamp = v.timestamp;
+      utrReference = v.razorpayPaymentId;
+      paymentMethod = "online";
+    };
+    ordersV2.add(k, migrated);
+  };
+  // Restore new-format orders
+  for ((k, v) in ordersEntriesV2.values()) {
+    ordersV2.add(k, v);
   };
   for (msg in contactMessagesArray.values()) {
     contactMessages.add(msg);
@@ -124,23 +185,21 @@ actor {
     userProfiles.add(k, v);
   };
 
-
-  // Upgrade hooks - serialize to stable storage before upgrade
+  // Upgrade hooks
   system func preupgrade() {
     flavorsEntries := flavors.entries().toArray();
-    ordersEntries := orders.entries().toArray();
+    ordersEntries := [];
+    ordersEntriesV2 := ordersV2.entries().toArray();
     contactMessagesArray := contactMessages.toArray();
     userProfilesEntries := userProfiles.entries().toArray();
   };
 
   system func postupgrade() {
-    // Data already restored from stable arrays in actor body above.
-    // Clear stable arrays to free memory (data is now in Maps).
     flavorsEntries := [];
     ordersEntries := [];
+    ordersEntriesV2 := [];
     contactMessagesArray := [];
     userProfilesEntries := [];
-    // Clear migrated legacy stable var
     sampleFlavors := [];
 
     // Seed the menu with 13 products if it is currently empty
@@ -167,10 +226,9 @@ actor {
     };
   };
 
-  // Seed default 13 products (only if menu is currently empty)
   public shared func seedDefaultFlavors() : async Nat {
     if (flavors.size() > 0) {
-      return 0; // Already has products, do nothing
+      return 0;
     };
     let seedData : [(Nat, IceCreamFlavor)] = [
       (1, { id = 1; name = "BANANA SPLIT"; description = "VANILLA, CHOCOLATE, STRAWBERRY"; price = 100.0; category = "Classic"; imageUrl = ?"/assets/generated/banana-split.dim_400x400.jpg"; isAvailable = true; isFeatured = true }),
@@ -194,7 +252,6 @@ actor {
     return 13;
   };
 
-  // Helper function
   func getFlavorInternal(id : Nat) : IceCreamFlavor {
     switch (flavors.get(id)) {
       case (null) { Runtime.trap("Flavor not found") };
@@ -202,20 +259,18 @@ actor {
     };
   };
 
-  // User Profile Functions
-  public query ({ caller }) func getCallerUserProfile() : async ?UserProfile {
-    userProfiles.get(caller);
+  public query func getCallerUserProfile() : async ?UserProfile {
+    null;
   };
 
-  public query ({ caller }) func getUserProfile(user : Principal) : async ?UserProfile {
-    userProfiles.get(user);
+  public query func getUserProfile(_ : Principal) : async ?UserProfile {
+    null;
   };
 
   public shared ({ caller }) func saveCallerUserProfile(profile : UserProfile) : async () {
     userProfiles.add(caller, profile);
   };
 
-  // Public read functions
   public query func getAllFlavors() : async [IceCreamFlavor] {
     flavors.values().toArray().sort(IceCreamFlavor.compareByName);
   };
@@ -243,7 +298,6 @@ actor {
     getFlavorInternal(id);
   };
 
-  // Flavor Management - security handled by frontend password gate
   public shared func addFlavor(flavorInput : IceCreamFlavorInput) : async Nat {
     let flavor : IceCreamFlavor = {
       flavorInput with
@@ -297,7 +351,6 @@ actor {
     flavors.remove(id);
   };
 
-
   public shared func clearAllFlavors() : async () {
     let ids = flavors.keys().toArray();
     for (id in ids.values()) {
@@ -324,7 +377,6 @@ actor {
     flavors.add(id, updatedFlavor);
   };
 
-  // Contact Messages
   public shared (_) func submitContactMessage(name : Text, email : Text, message : Text) : async () {
     let contactMessage : ContactMessage = {
       name;
@@ -345,15 +397,14 @@ actor {
     contactMessages.addAll(remaining.values());
   };
 
-  // Order Functions
   public shared (_) func placeOrder(
     customerName : Text,
     customerPhone : Text,
     deliveryAddress : Text,
     items : [OrderItem],
     totalAmount : Float,
-    razorpayOrderId : Text,
-    razorpayPaymentId : Text,
+    utrReference : Text,
+    paymentMethod : Text,
   ) : async Nat {
     let order : Order = {
       id = nextOrderId;
@@ -364,46 +415,37 @@ actor {
       totalAmount;
       status = "confirmed";
       timestamp = Time.now();
-      razorpayOrderId;
-      razorpayPaymentId;
+      utrReference;
+      paymentMethod;
     };
-    orders.add(nextOrderId, order);
+    ordersV2.add(nextOrderId, order);
     nextOrderId += 1;
     order.id;
   };
 
   public query func getOrders() : async [Order] {
-    orders.values().toArray();
+    ordersV2.values().toArray();
   };
 
   public query func getOrdersByPhone(phone : Text) : async [Order] {
-    orders.values().toArray().filter(func(o) { o.customerPhone == phone });
+    ordersV2.values().toArray().filter(func(o) { o.customerPhone == phone });
   };
 
   public shared func updateOrderStatus(id : Nat, status : Text) : async () {
-    switch (orders.get(id)) {
+    switch (ordersV2.get(id)) {
       case (null) { Runtime.trap("Order not found") };
       case (?order) {
         let updatedOrder : Order = { order with status };
-        orders.add(id, updatedOrder);
+        ordersV2.add(id, updatedOrder);
       };
     };
   };
 
   public shared func deleteOrder(id : Nat) : async () {
-    if (not orders.containsKey(id)) {
+    if (not ordersV2.containsKey(id)) {
       Runtime.trap("Order not found");
     };
-    orders.remove(id);
-  };
-
-  // Payment Settings
-  public shared func setRazorpayKeyId(key : Text) : async () {
-    razorpayKeyId := ?key;
-  };
-
-  public query func getRazorpayKeyId() : async ?Text {
-    razorpayKeyId;
+    ordersV2.remove(id);
   };
 
   public shared func setUpiId(id : Text) : async () {
@@ -412,5 +454,9 @@ actor {
 
   public query func getUpiId() : async ?Text {
     upiId;
+  };
+
+  public query func isCallerAdmin() : async Bool {
+    false;
   };
 };

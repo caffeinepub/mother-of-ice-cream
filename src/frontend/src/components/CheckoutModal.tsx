@@ -36,45 +36,7 @@ interface ConfirmedOrder {
   paymentMethod: "online";
 }
 
-type PaymentMethod = "gpay" | "phonepe" | "online";
-
-declare global {
-  interface Window {
-    Razorpay: new (options: RazorpayOptions) => RazorpayInstance;
-  }
-}
-
-interface RazorpayOptions {
-  key: string;
-  amount: number;
-  currency: string;
-  name: string;
-  description: string;
-  prefill: { contact: string };
-  theme: { color: string };
-  handler: (response: RazorpayResponse) => void;
-  modal?: { ondismiss?: () => void };
-}
-
-interface RazorpayResponse {
-  razorpay_payment_id: string;
-  razorpay_order_id?: string;
-}
-
-interface RazorpayInstance {
-  open(): void;
-}
-
-async function loadRazorpayScript(): Promise<boolean> {
-  if (window.Razorpay) return true;
-  return new Promise((resolve) => {
-    const script = document.createElement("script");
-    script.src = "https://checkout.razorpay.com/v1/checkout.js";
-    script.onload = () => resolve(true);
-    script.onerror = () => resolve(false);
-    document.body.appendChild(script);
-  });
-}
+type PaymentMethod = "gpay" | "phonepe";
 
 function GoogleIcon({ size = 38 }: { size?: number }) {
   return (
@@ -129,9 +91,6 @@ export default function CheckoutModal({
     null,
   );
   const [paymentMethod, setPaymentMethod] = useState<PaymentMethod>("gpay");
-  const [razorpayAvailable, setRazorpayAvailable] = useState<boolean | null>(
-    null,
-  );
 
   // UPI confirmation flow state
   const [upiStep, setUpiStep] = useState<"idle" | "confirm">("idle");
@@ -148,31 +107,6 @@ export default function CheckoutModal({
     return errs;
   }
 
-  async function handleRazorpayKeyCheck(): Promise<string | null> {
-    if (!actor) return null;
-    try {
-      const keyResult = await actor.getRazorpayKeyId();
-      // getRazorpayKeyId returns string | null directly
-      return keyResult ?? null;
-    } catch {
-      return null;
-    }
-  }
-
-  // Check on modal open
-  if (open && razorpayAvailable === null) {
-    handleRazorpayKeyCheck().then((key) => {
-      const available = !!key;
-      setRazorpayAvailable(available);
-      // Always default to gpay when UPI is available, otherwise gpay still as default
-      if (!available && upiId) {
-        setPaymentMethod("gpay");
-      } else if (!available && !upiId) {
-        setPaymentMethod("gpay");
-      }
-    });
-  }
-
   function handleClose() {
     if (!isPaying) {
       onOpenChange(false);
@@ -181,7 +115,6 @@ export default function CheckoutModal({
         setPhone("");
         setAddress("");
         setErrors({});
-        setRazorpayAvailable(null);
         setPaymentMethod("gpay");
         setUpiStep("idle");
         setUtrInput("");
@@ -190,7 +123,7 @@ export default function CheckoutModal({
     }
   }
 
-  function buildUpiDeepLink(app: "gpay" | "phonepe") {
+  function buildUpiDeepLink(app: PaymentMethod) {
     const pa = encodeURIComponent(upiId ?? "");
     const pn = encodeURIComponent("Mother of Ice-cream");
     const am = totalPrice.toFixed(2);
@@ -207,7 +140,7 @@ export default function CheckoutModal({
     setUtrError("");
   }
 
-  function handleOpenUpiApp(app: "gpay" | "phonepe") {
+  function handleOpenUpiApp(app: PaymentMethod) {
     const link = buildUpiDeepLink(app);
     window.open(link, "_blank");
     setUpiStep("confirm");
@@ -271,119 +204,7 @@ export default function CheckoutModal({
     }
   }
 
-  async function handlePayment() {
-    const errs = validate();
-    if (Object.keys(errs).length > 0) {
-      setErrors(errs);
-      return;
-    }
-    setErrors({});
-
-    if (!actor) {
-      toast.error("Connection issue — please refresh the page and try again.");
-      return;
-    }
-
-    setIsPaying(true);
-
-    const currentActor = actor;
-    const cartItems = items.map((item) => ({
-      flavorId: item.flavorId,
-      flavorName: item.flavorName,
-      quantity: BigInt(item.quantity),
-      price: item.price,
-    }));
-    const snapshotTotal = totalPrice;
-    const snapshotName = name.trim();
-    const snapshotPhone = phone.trim();
-    const snapshotAddress = address.trim();
-
-    try {
-      // Online payment path — fetch Razorpay key
-      const razorpayKey = await currentActor.getRazorpayKeyId();
-
-      if (!razorpayKey) {
-        // No Razorpay key configured — inform user to use UPI
-        toast.error(
-          "Please pay via Google Pay or PhonePe to place your order.",
-        );
-        setIsPaying(false);
-        return;
-      }
-
-      const scriptLoaded = await loadRazorpayScript();
-      if (!scriptLoaded) {
-        toast.error(
-          "Failed to load payment gateway. Please check your connection.",
-        );
-        setIsPaying(false);
-        return;
-      }
-
-      const amountInPaise = Math.round(totalPrice * 100);
-
-      const rzpOptions: RazorpayOptions = {
-        key: razorpayKey,
-        amount: amountInPaise,
-        currency: "INR",
-        name: "Mother of Ice-cream",
-        description: "Ice Cream Order — Mallickpur Habibchauk Chauk, Kolkata",
-        prefill: { contact: snapshotPhone },
-        theme: { color: "#FF4FA3" },
-        handler: async (response: RazorpayResponse) => {
-          try {
-            const orderId = await currentActor.placeOrder(
-              snapshotName,
-              snapshotPhone,
-              snapshotAddress,
-              cartItems,
-              snapshotTotal,
-              response.razorpay_order_id ?? "",
-              response.razorpay_payment_id,
-            );
-            clearCart();
-            setConfirmedOrder({
-              orderId,
-              customerName: snapshotName,
-              totalAmount: snapshotTotal,
-              paymentMethod: "online",
-            });
-            onOpenChange(false);
-          } catch (_err) {
-            toast.error(
-              `Payment received but order not saved. Contact shop with payment ID: ${response.razorpay_payment_id}`,
-            );
-          } finally {
-            setIsPaying(false);
-          }
-        },
-        modal: {
-          ondismiss: () => {
-            setIsPaying(false);
-          },
-        },
-      };
-
-      const rzp = new window.Razorpay(rzpOptions);
-      rzp.open();
-    } catch (err) {
-      toast.error(
-        err instanceof Error ? err.message : "Something went wrong. Try again.",
-      );
-      setIsPaying(false);
-    }
-  }
-
-  const hasOnlinePayment = razorpayAvailable === true;
   const hasUpi = !!upiId;
-  const isUpiMethod = paymentMethod === "gpay" || paymentMethod === "phonepe";
-  const isOnline = paymentMethod === "online";
-
-  // Determine layout: how many payment tiles to show
-  // gpay+phonepe tiles only shown if UPI configured
-  // razorpay tile only shown if razorpay configured
-  const showUpiTiles = hasUpi;
-  const showRazorpayTile = hasOnlinePayment;
 
   return (
     <>
@@ -406,14 +227,14 @@ export default function CheckoutModal({
           </div>
 
           {/* Payment Method Selection */}
-          {(showUpiTiles || showRazorpayTile) && (
+          {hasUpi && (
             <div className="mb-1">
               <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest mb-2">
-                How would you like to pay?
+                Pay via UPI — advance payment required
               </p>
 
               {/* UPI Confirmation steps — replaces tiles when in confirm state */}
-              {isUpiMethod && upiStep === "confirm" ? (
+              {upiStep === "confirm" ? (
                 <div className="rounded-xl border-2 border-blue-200 bg-blue-50/60 p-4 space-y-4">
                   <div className="flex items-center justify-between">
                     <p className="text-xs font-bold text-blue-700 uppercase tracking-widest">
@@ -446,9 +267,7 @@ export default function CheckoutModal({
                       </p>
                       <button
                         type="button"
-                        onClick={() =>
-                          handleOpenUpiApp(paymentMethod as "gpay" | "phonepe")
-                        }
+                        onClick={() => handleOpenUpiApp(paymentMethod)}
                         className={`inline-flex items-center gap-2 px-4 py-2.5 rounded-xl text-white font-bold text-sm shadow-md transition-opacity hover:opacity-90 ${
                           paymentMethod === "gpay"
                             ? "bg-[#4285F4]"
@@ -518,127 +337,81 @@ export default function CheckoutModal({
                   </div>
                 </div>
               ) : (
-                /* Payment tiles grid */
-                <div
-                  className={`grid gap-3 ${
-                    showUpiTiles && showRazorpayTile
-                      ? "grid-cols-3"
-                      : showUpiTiles
-                        ? "grid-cols-2"
-                        : "grid-cols-2"
-                  }`}
-                >
+                /* Payment tiles grid — Google Pay + PhonePe */
+                <div className="grid grid-cols-2 gap-3">
                   {/* Google Pay tile */}
-                  {showUpiTiles && (
-                    <button
-                      type="button"
-                      onClick={() => handleSelectPayment("gpay")}
-                      className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4285F4] ${
+                  <button
+                    type="button"
+                    onClick={() => handleSelectPayment("gpay")}
+                    className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#4285F4] ${
+                      paymentMethod === "gpay"
+                        ? "border-[#4285F4] bg-blue-50/80 shadow-md"
+                        : "border-border bg-muted/30 hover:border-[#4285F4]/50 hover:bg-blue-50/30"
+                    }`}
+                    aria-pressed={paymentMethod === "gpay"}
+                    data-ocid="checkout.toggle"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-[#4285F4] flex items-center justify-center">
+                      <GoogleIcon size={28} />
+                    </div>
+                    <span
+                      className={`font-bold text-xs ${
                         paymentMethod === "gpay"
-                          ? "border-[#4285F4] bg-blue-50/80 shadow-md"
-                          : "border-border bg-muted/30 hover:border-[#4285F4]/50 hover:bg-blue-50/30"
+                          ? "text-[#4285F4]"
+                          : "text-foreground"
                       }`}
-                      aria-pressed={paymentMethod === "gpay"}
-                      data-ocid="checkout.toggle"
                     >
-                      <div className="w-9 h-9 rounded-full bg-[#4285F4] flex items-center justify-center">
-                        <GoogleIcon size={28} />
-                      </div>
-                      <span
-                        className={`font-bold text-xs ${
-                          paymentMethod === "gpay"
-                            ? "text-[#4285F4]"
-                            : "text-foreground"
-                        }`}
-                      >
-                        Google Pay
+                      Google Pay
+                    </span>
+                    {paymentMethod === "gpay" && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#4285F4] text-white text-[9px] font-bold">
+                        ✓
                       </span>
-                      {paymentMethod === "gpay" && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#4285F4] text-white text-[9px] font-bold">
-                          ✓
-                        </span>
-                      )}
-                    </button>
-                  )}
+                    )}
+                  </button>
 
                   {/* PhonePe tile */}
-                  {showUpiTiles && (
-                    <button
-                      type="button"
-                      onClick={() => handleSelectPayment("phonepe")}
-                      className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5F259F] ${
+                  <button
+                    type="button"
+                    onClick={() => handleSelectPayment("phonepe")}
+                    className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-[#5F259F] ${
+                      paymentMethod === "phonepe"
+                        ? "border-[#5F259F] bg-purple-50/80 shadow-md"
+                        : "border-border bg-muted/30 hover:border-[#5F259F]/50 hover:bg-purple-50/30"
+                    }`}
+                    aria-pressed={paymentMethod === "phonepe"}
+                    data-ocid="checkout.toggle"
+                  >
+                    <div className="w-9 h-9 rounded-full bg-[#5F259F] flex items-center justify-center">
+                      <span
+                        className="text-white font-black"
+                        style={{ fontSize: "11px", lineHeight: 1 }}
+                      >
+                        Pe
+                      </span>
+                    </div>
+                    <span
+                      className={`font-bold text-xs ${
                         paymentMethod === "phonepe"
-                          ? "border-[#5F259F] bg-purple-50/80 shadow-md"
-                          : "border-border bg-muted/30 hover:border-[#5F259F]/50 hover:bg-purple-50/30"
+                          ? "text-[#5F259F]"
+                          : "text-foreground"
                       }`}
-                      aria-pressed={paymentMethod === "phonepe"}
-                      data-ocid="checkout.toggle"
                     >
-                      <div className="w-9 h-9 rounded-full bg-[#5F259F] flex items-center justify-center">
-                        <span
-                          className="text-white font-black"
-                          style={{ fontSize: "11px", lineHeight: 1 }}
-                        >
-                          Pe
-                        </span>
-                      </div>
-                      <span
-                        className={`font-bold text-xs ${
-                          paymentMethod === "phonepe"
-                            ? "text-[#5F259F]"
-                            : "text-foreground"
-                        }`}
-                      >
-                        PhonePe
+                      PhonePe
+                    </span>
+                    {paymentMethod === "phonepe" && (
+                      <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#5F259F] text-white text-[9px] font-bold">
+                        ✓
                       </span>
-                      {paymentMethod === "phonepe" && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-[#5F259F] text-white text-[9px] font-bold">
-                          ✓
-                        </span>
-                      )}
-                    </button>
-                  )}
-
-                  {/* Razorpay online tile */}
-                  {showRazorpayTile && (
-                    <button
-                      type="button"
-                      onClick={() => handleSelectPayment("online")}
-                      className={`flex flex-col items-center justify-center gap-2 rounded-xl border-2 p-3 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary ${
-                        isOnline
-                          ? "border-primary bg-primary/5 shadow-md"
-                          : "border-border bg-muted/30 hover:border-primary/40 hover:bg-muted/60"
-                      }`}
-                      aria-pressed={isOnline}
-                      data-ocid="checkout.toggle"
-                    >
-                      <div className="w-9 h-9 rounded-full bg-primary/10 flex items-center justify-center">
-                        <CreditCard className="w-4 h-4 text-primary" />
-                      </div>
-                      <span
-                        className={`font-bold text-xs text-center leading-tight ${
-                          isOnline ? "text-primary" : "text-foreground"
-                        }`}
-                      >
-                        Cards &amp; UPI
-                      </span>
-                      <span className="text-[9px] text-muted-foreground text-center leading-tight">
-                        via Razorpay
-                      </span>
-                      {isOnline && (
-                        <span className="inline-flex items-center px-1.5 py-0.5 rounded-full bg-primary text-white text-[9px] font-bold">
-                          ✓
-                        </span>
-                      )}
-                    </button>
-                  )}
+                    )}
+                  </button>
                 </div>
               )}
             </div>
           )}
 
-          {/* When neither UPI nor Razorpay configured — contact notice */}
-          {!showUpiTiles && !showRazorpayTile && (
+          {/* When UPI not configured — contact notice */}
+          {!hasUpi && (
             <div className="rounded-xl border-2 border-amber-200 bg-amber-50/60 p-4 mb-1">
               <p className="text-sm text-amber-800 font-semibold">
                 To place an order, please contact us at{" "}
@@ -770,7 +543,7 @@ export default function CheckoutModal({
 
           <div className="flex flex-col gap-3 pt-2">
             {/* UPI confirm button */}
-            {isUpiMethod && upiStep === "confirm" ? (
+            {upiStep === "confirm" ? (
               <Button
                 onClick={handleConfirmUpiPayment}
                 disabled={isPaying || isConnecting}
@@ -797,7 +570,7 @@ export default function CheckoutModal({
                   </>
                 )}
               </Button>
-            ) : isUpiMethod ? (
+            ) : hasUpi ? (
               /* Show the open-app button when UPI selected but not yet in confirm state */
               <Button
                 onClick={() => {
@@ -807,7 +580,7 @@ export default function CheckoutModal({
                     return;
                   }
                   setErrors({});
-                  handleOpenUpiApp(paymentMethod as "gpay" | "phonepe");
+                  handleOpenUpiApp(paymentMethod);
                 }}
                 disabled={isConnecting}
                 className="w-full rounded-pill border-0 text-white font-bold py-6 transition-all"
@@ -846,37 +619,11 @@ export default function CheckoutModal({
                   </>
                 )}
               </Button>
-            ) : (
-              <Button
-                onClick={handlePayment}
-                disabled={isPaying || isConnecting}
-                className="w-full rounded-pill gradient-pink border-0 text-white font-bold py-6 shadow-candy hover:shadow-candy-lg transition-all"
-                data-ocid="checkout.submit_button"
-              >
-                {isConnecting ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Connecting…
-                  </>
-                ) : isPaying ? (
-                  <>
-                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                    Processing…
-                  </>
-                ) : (
-                  <>🔒 Pay ₹{totalPrice.toFixed(0)} Now</>
-                )}
-              </Button>
-            )}
+            ) : null}
 
-            {isUpiMethod && upiStep === "idle" && (
+            {hasUpi && upiStep === "idle" && (
               <p className="text-center text-xs text-muted-foreground">
                 Advance payment confirms your party order booking
-              </p>
-            )}
-            {isOnline && hasOnlinePayment && (
-              <p className="text-center text-xs text-muted-foreground">
-                Secured by Razorpay
               </p>
             )}
           </div>

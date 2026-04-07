@@ -46,12 +46,12 @@ export interface IceCreamFlavorUpdate {
 }
 export interface Order {
   'id' : bigint,
-  'razorpayPaymentId' : string,
   'customerName' : string,
   'status' : string,
   'deliveryAddress' : string,
+  'utrReference' : string,
+  'paymentMethod' : string,
   'customerPhone' : string,
-  'razorpayOrderId' : string,
   'totalAmount' : number,
   'timestamp' : Time,
   'items' : Array<OrderItem>,
@@ -64,28 +64,21 @@ export interface OrderItem {
 }
 export type Time = bigint;
 export interface UserProfile { 'name' : string }
-export type UserRole = { 'admin' : null } |
-  { 'user' : null } |
-  { 'guest' : null };
 export interface _SERVICE {
-  '_initializeAccessControlWithSecret' : ActorMethod<[string], undefined>,
   'addFlavor' : ActorMethod<[IceCreamFlavorInput], bigint>,
-  'assignCallerUserRole' : ActorMethod<[Principal, UserRole], undefined>,
-  'deleteContactMessage' : ActorMethod<[Time], undefined>,
   'clearAllFlavors' : ActorMethod<[], undefined>,
+  'deleteContactMessage' : ActorMethod<[Time], undefined>,
   'deleteFlavor' : ActorMethod<[bigint], undefined>,
   'deleteOrder' : ActorMethod<[bigint], undefined>,
   'getAllContactMessages' : ActorMethod<[], Array<ContactMessage>>,
   'getAllFlavors' : ActorMethod<[], Array<IceCreamFlavor>>,
   'getAvailableFlavors' : ActorMethod<[], Array<IceCreamFlavor>>,
   'getCallerUserProfile' : ActorMethod<[], [] | [UserProfile]>,
-  'getCallerUserRole' : ActorMethod<[], UserRole>,
   'getFeaturedFlavors' : ActorMethod<[], Array<IceCreamFlavor>>,
   'getFlavor' : ActorMethod<[bigint], IceCreamFlavor>,
   'getFlavorsByCategory' : ActorMethod<[string], Array<IceCreamFlavor>>,
   'getOrders' : ActorMethod<[], Array<Order>>,
   'getOrdersByPhone' : ActorMethod<[string], Array<Order>>,
-  'getRazorpayKeyId' : ActorMethod<[], [] | [string]>,
   'getUpiId' : ActorMethod<[], [] | [string]>,
   'getUserProfile' : ActorMethod<[Principal], [] | [UserProfile]>,
   'isCallerAdmin' : ActorMethod<[], boolean>,
@@ -96,7 +89,6 @@ export interface _SERVICE {
   'saveCallerUserProfile' : ActorMethod<[UserProfile], undefined>,
   'searchFlavors' : ActorMethod<[string], Array<IceCreamFlavor>>,
   'seedDefaultFlavors' : ActorMethod<[], bigint>,
-  'setRazorpayKeyId' : ActorMethod<[string], undefined>,
   'setUpiId' : ActorMethod<[string], undefined>,
   'submitContactMessage' : ActorMethod<[string, string, string], undefined>,
   'toggleAvailability' : ActorMethod<[bigint], undefined>,

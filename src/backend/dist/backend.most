@@ -1,0 +1,104 @@
+// Version: 1.0.0
+type ContactMessage__139940291 =
+  {email : Text; message : Text; name : Text; timestamp : Time__900049286};
+type Data__791452850<K, V> =
+  {var count : Nat__490723111; kvs : [var ?(K, V)]};
+type IceCreamFlavor__632668369 =
+  {
+    category : Text;
+    description : Text;
+    id : Nat;
+    imageUrl : ?Text;
+    isAvailable : Bool;
+    isFeatured : Bool;
+    name : Text;
+    price : Float
+  };
+type Int__270357528 = Int__616954475;
+type Int__616954475 = Int;
+type Internal__8484328<K, V> =
+  {children : [var ?Node__46230540<K, V>]; data : Data__791452850<K, V>};
+type Leaf__809889148<K, V> = {data : Data__791452850<K, V>};
+type Map__158565046<K, V> = Map__297112838<K, V>;
+type Map__297112838<K, V> =
+  {var root : Node__46230540<K, V>; var size : Nat__490723111};
+type Map__605269027<K, V> = Map__158565046<K, V>;
+type Nat__490723111 = Nat__920180692;
+type Nat__920180692 = Nat;
+type Node__46230540<K, V> =
+  {#internal : Internal__8484328<K, V>; #leaf : Leaf__809889148<K, V>};
+type OrderItem__592186033 =
+  {flavorId : Nat; flavorName : Text; price : Float; quantity : Nat};
+type OrderV1__793055768 =
+  {
+    customerName : Text;
+    customerPhone : Text;
+    deliveryAddress : Text;
+    id : Nat;
+    items : [OrderItem__592186033];
+    razorpayOrderId : Text;
+    razorpayPaymentId : Text;
+    status : Text;
+    timestamp : Time__900049286;
+    totalAmount : Float
+  };
+type Order__762448211 =
+  {
+    customerName : Text;
+    customerPhone : Text;
+    deliveryAddress : Text;
+    id : Nat;
+    items : [OrderItem__592186033];
+    paymentMethod : Text;
+    status : Text;
+    timestamp : Time__900049286;
+    totalAmount : Float;
+    utrReference : Text
+  };
+type Time__796480547 = Int__270357528;
+type Time__900049286 = Time__796480547;
+type UserProfile__491224006 = {name : Text};
+type UserRole__599675725 = {#admin; #guest; #user};
+actor {
+  stable var accessControlState :
+    {
+      var adminAssigned : Bool;
+      userRoles : Map__605269027<Principal, UserRole__599675725>
+    };
+  stable contactMessages :
+    {
+      var blockIndex : Nat__490723111;
+      var blocks : [var [var ?ContactMessage__139940291]];
+      var elementIndex : Nat__490723111
+    };
+  stable var contactMessagesArray : [ContactMessage__139940291];
+  stable flavors :
+    {
+      var root : Node__46230540<Nat, IceCreamFlavor__632668369>;
+      var size : Nat__490723111
+    };
+  stable var flavorsEntries : [(Nat, IceCreamFlavor__632668369)];
+  stable var nextId : Nat;
+  stable var nextOrderId : Nat;
+  stable orders :
+    {
+      var root : Node__46230540<Nat, OrderV1__793055768>;
+      var size : Nat__490723111
+    };
+  stable var ordersEntries : [(Nat, OrderV1__793055768)];
+  stable var ordersEntriesV2 : [(Nat, Order__762448211)];
+  stable ordersV2 :
+    {
+      var root : Node__46230540<Nat, Order__762448211>;
+      var size : Nat__490723111
+    };
+  stable var razorpayKeyId : ?Text;
+  stable var sampleFlavors : [IceCreamFlavor__632668369];
+  stable var upiId : ?Text;
+  stable userProfiles :
+    {
+      var root : Node__46230540<Principal, UserProfile__491224006>;
+      var size : Nat__490723111
+    };
+  stable var userProfilesEntries : [(Principal, UserProfile__491224006)]
+};

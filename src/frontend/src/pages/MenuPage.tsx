@@ -19,16 +19,23 @@ function PartyOrderBanner() {
       initial={{ opacity: 0, y: -20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: 0.5, ease: "easeOut" }}
-      className="w-full py-3 px-4 text-center font-black text-white text-sm sm:text-base tracking-wide"
+      className="w-full py-3.5 px-4 text-center font-black text-white text-sm sm:text-base tracking-wide"
       style={{
         background:
           "linear-gradient(90deg, oklch(0.58 0.24 20) 0%, oklch(0.65 0.22 355) 40%, oklch(0.72 0.20 45) 100%)",
       }}
-      data-ocid="menu.section"
+      data-ocid="menu.party_banner"
     >
       🎉 Currently accepting{" "}
       <span className="underline underline-offset-2">PARTY ORDERS</span> only —
-      Call us to place your order!
+      Advance online payment required · Call{" "}
+      <a
+        href="tel:+919007819261"
+        className="underline underline-offset-2 hover:text-accent transition-colors"
+      >
+        +91 9007819261
+      </a>{" "}
+      to book!
     </motion.div>
   );
 }
@@ -79,7 +86,7 @@ export default function MenuPage() {
               Our Flavor Menu
             </h1>
             <p className="text-muted-foreground text-lg max-w-lg mx-auto">
-              Handcrafted flavors — classic, vegan, seasonal, and premium.
+              Handcrafted flavors — classic, seasonal, premium, and more.
             </p>
           </motion.div>
         </div>
@@ -93,7 +100,7 @@ export default function MenuPage() {
             "linear-gradient(90deg, oklch(0.65 0.22 20) 0%, oklch(0.72 0.18 45) 100%)",
         }}
       >
-        🍦 Prices starting from ₹10 to ₹800 — A scoop for every craving!
+        🍦 Prices starting from ₹40 — A treat for every craving!
       </div>
 
       <div className="max-w-6xl mx-auto px-6 py-10">
@@ -110,7 +117,7 @@ export default function MenuPage() {
                   "px-4 py-2 rounded-pill text-sm font-bold transition-all duration-200",
                   activeCategory === cat
                     ? "gradient-pink text-white shadow-candy"
-                    : "bg-white border-2 border-border text-muted-foreground hover:border-primary hover:text-primary",
+                    : "bg-card border-2 border-border text-muted-foreground hover:border-primary hover:text-primary",
                 )}
               >
                 {cat}
@@ -139,7 +146,7 @@ export default function MenuPage() {
             {Array.from({ length: 8 }).map((_, i) => (
               // biome-ignore lint/suspicious/noArrayIndexKey: static skeleton list
               <div key={i} className="rounded-card overflow-hidden">
-                <Skeleton className="h-36 w-full" />
+                <Skeleton className="h-44 w-full" />
                 <div className="p-4 space-y-2">
                   <Skeleton className="h-4 w-3/4" />
                   <Skeleton className="h-3 w-full" />
