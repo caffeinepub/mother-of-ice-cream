@@ -1,6 +1,14 @@
 @font-face {
-  font-family: "Nunito";
-  src: url("/assets/fonts/GeneralSans.woff2") format("woff2");
+  font-family: "Space Grotesk";
+  src: url("/assets/fonts/SpaceGrotesk.woff2") format("woff2");
+  font-weight: 100 900;
+  font-style: normal;
+  font-display: swap;
+}
+
+@font-face {
+  font-family: "Satoshi";
+  src: url("/assets/fonts/Satoshi.woff2") format("woff2");
   font-weight: 100 900;
   font-style: normal;
   font-display: swap;
@@ -12,64 +20,65 @@
 
 @layer base {
   :root {
-    --radius: 1rem;
+    --radius: 0.75rem;
 
-    /* Scoops & Smiles color palette — OKLCH */
-    /* Cream background: #FFF6F0 */
-    --background: 0.978 0.012 55;
-    /* Deep text: #1F1A1C */
-    --foreground: 0.17 0.012 10;
-    /* Card white */
-    --card: 1 0 0;
-    --card-foreground: 0.17 0.012 10;
+    /* Premium luxury jewel-tone palette — OKLCH */
+    /* Deep indigo background: #1a1a3e */
+    --background: 0.12 0.08 275;
+    /* Cream foreground text */
+    --foreground: 0.94 0.02 55;
+    /* Card = semi-transparent glass effect */
+    --card: 0.18 0.06 275;
+    --card-foreground: 0.94 0.02 55;
     /* Popover */
-    --popover: 1 0 0;
-    --popover-foreground: 0.17 0.012 10;
-    /* Primary = bubblegum pink #FF4FA3 */
-    --primary: 0.64 0.22 355;
-    --primary-foreground: 1 0 0;
-    /* Secondary = aqua/mint #25D6C8 */
-    --secondary: 0.82 0.13 185;
-    --secondary-foreground: 0.17 0.012 10;
-    /* Muted = warm gray */
-    --muted: 0.96 0.008 55;
-    --muted-foreground: 0.52 0.03 20;
-    /* Accent = sunny yellow #FFD166 */
-    --accent: 0.88 0.16 85;
-    --accent-foreground: 0.17 0.012 10;
+    --popover: 0.18 0.06 275;
+    --popover-foreground: 0.94 0.02 55;
+    /* Primary = electric fuchsia #d946ef */
+    --primary: 0.65 0.29 310;
+    --primary-foreground: 0.94 0.02 55;
+    /* Secondary = hot pink #ff2e97 */
+    --secondary: 0.63 0.27 345;
+    --secondary-foreground: 0.94 0.02 55;
+    /* Muted = dark purple */
+    --muted: 0.22 0.05 275;
+    --muted-foreground: 0.72 0.08 55;
+    /* Accent = gold highlight #ffd700 */
+    --accent: 0.84 0.18 85;
+    --accent-foreground: 0.12 0.08 275;
     /* Destructive */
-    --destructive: 0.577 0.245 27.325;
-    --destructive-foreground: 1 0 0;
-    /* Border */
-    --border: 0.93 0.015 55;
-    --input: 0.93 0.015 55;
-    --ring: 0.64 0.22 355;
+    --destructive: 0.55 0.28 25;
+    --destructive-foreground: 0.94 0.02 55;
+    /* Border = subtle purple glow */
+    --border: 0.24 0.08 280;
+    --input: 0.24 0.08 280;
+    --ring: 0.65 0.29 310;
 
     /* Chart colors */
-    --chart-1: 0.64 0.22 355;
-    --chart-2: 0.82 0.13 185;
-    --chart-3: 0.88 0.16 85;
+    --chart-1: 0.65 0.29 310;
+    --chart-2: 0.63 0.27 345;
+    --chart-3: 0.84 0.18 85;
     --chart-4: 0.72 0.19 300;
     --chart-5: 0.68 0.18 45;
 
     /* Sidebar */
-    --sidebar: 0.978 0.012 55;
-    --sidebar-foreground: 0.17 0.012 10;
-    --sidebar-primary: 0.64 0.22 355;
-    --sidebar-primary-foreground: 1 0 0;
-    --sidebar-accent: 0.96 0.008 55;
-    --sidebar-accent-foreground: 0.17 0.012 10;
-    --sidebar-border: 0.93 0.015 55;
-    --sidebar-ring: 0.64 0.22 355;
+    --sidebar: 0.15 0.07 275;
+    --sidebar-foreground: 0.94 0.02 55;
+    --sidebar-primary: 0.65 0.29 310;
+    --sidebar-primary-foreground: 0.94 0.02 55;
+    --sidebar-accent: 0.84 0.18 85;
+    --sidebar-accent-foreground: 0.12 0.08 275;
+    --sidebar-border: 0.24 0.08 280;
+    --sidebar-ring: 0.65 0.29 310;
 
     /* Custom brand tokens */
-    --pink: 0.64 0.22 355;
-    --pink-light: 0.94 0.04 355;
-    --aqua: 0.82 0.13 185;
-    --aqua-light: 0.94 0.05 185;
-    --yellow: 0.88 0.16 85;
-    --yellow-light: 0.96 0.06 85;
-    --cream: 0.978 0.012 55;
+    --pink: 0.63 0.27 345;
+    --pink-light: 0.78 0.18 345;
+    --fuchsia: 0.65 0.29 310;
+    --fuchsia-light: 0.8 0.2 310;
+    --gold: 0.84 0.18 85;
+    --purple-dark: 0.12 0.08 275;
+    --purple-light: 0.22 0.05 275;
+    --cream: 0.94 0.02 55;
   }
 
   * {
@@ -78,7 +87,7 @@
 
   body {
     @apply bg-background text-foreground;
-    font-family: "Nunito", sans-serif;
+    font-family: "Satoshi", sans-serif;
   }
 
   h1,
@@ -87,40 +96,105 @@
   h4,
   h5,
   h6 {
-    font-family: "Nunito", sans-serif;
-    font-weight: 800;
+    font-family: "Space Grotesk", sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
   }
 }
 
 @layer utilities {
-  .gradient-pink {
-    background: linear-gradient(
-      135deg,
-      oklch(0.64 0.22 355),
-      oklch(0.68 0.22 20)
-    );
+  /* Font families */
+  .font-display {
+    font-family: "Space Grotesk", sans-serif;
   }
-  .gradient-aqua {
-    background: linear-gradient(
-      135deg,
-      oklch(0.82 0.13 185),
-      oklch(0.78 0.15 200)
-    );
+  .font-body {
+    font-family: "Satoshi", sans-serif;
   }
+
+  /* Text cream shorthand */
+  .text-cream {
+    color: oklch(0.94 0.02 55);
+  }
+  .bg-cream {
+    background-color: oklch(0.94 0.02 55);
+  }
+
+  /* Premium gradient effects */
   .gradient-hero {
     background: linear-gradient(
-      160deg,
-      oklch(0.978 0.012 55) 0%,
-      oklch(0.97 0.025 15) 100%
+      135deg,
+      oklch(0.12 0.08 275) 0%,
+      oklch(0.18 0.1 260) 100%
     );
   }
-  .shadow-candy {
-    box-shadow: 0 10px 30px oklch(0.64 0.22 355 / 0.14);
+  .gradient-primary {
+    background: linear-gradient(
+      135deg,
+      oklch(0.65 0.29 310),
+      oklch(0.63 0.27 345)
+    );
   }
-  .shadow-candy-lg {
-    box-shadow: 0 20px 50px oklch(0.64 0.22 355 / 0.18);
+  .gradient-accent {
+    background: linear-gradient(
+      135deg,
+      oklch(0.84 0.18 85),
+      oklch(0.78 0.15 100)
+    );
   }
-  .blob-shape {
-    border-radius: 60% 40% 55% 45% / 55% 45% 55% 45%;
+
+  /* Glassmorphism effect */
+  .glass {
+    background: oklch(0.18 0.06 275 / 0.5);
+    backdrop-filter: blur(10px);
+    border: 1px solid oklch(0.24 0.08 280 / 0.5);
+  }
+  .glass-lg {
+    background: oklch(0.18 0.06 275 / 0.6);
+    backdrop-filter: blur(20px);
+    border: 1px solid oklch(0.24 0.08 280 / 0.6);
+  }
+
+  /* Neon glow effects */
+  .glow-pink {
+    box-shadow: 0 0 20px oklch(0.63 0.27 345 / 0.4), 0 0 40px
+      oklch(0.63 0.27 345 / 0.15);
+  }
+  .glow-fuchsia {
+    box-shadow: 0 0 20px oklch(0.65 0.29 310 / 0.4), 0 0 40px
+      oklch(0.65 0.29 310 / 0.15);
+  }
+  .glow-gold {
+    box-shadow: 0 0 16px oklch(0.84 0.18 85 / 0.3), 0 0 32px
+      oklch(0.84 0.18 85 / 0.1);
+  }
+
+  /* Luxury shadows */
+  .shadow-luxury {
+    box-shadow: 0 10px 30px oklch(0.63 0.27 345 / 0.15), 0 0 0 1px
+      oklch(0.24 0.08 280 / 0.2);
+  }
+  .shadow-luxury-lg {
+    box-shadow: 0 20px 50px oklch(0.63 0.27 345 / 0.2), 0 0 0 1px
+      oklch(0.24 0.08 280 / 0.3);
+  }
+  .shadow-luxury-xl {
+    box-shadow: 0 40px 80px oklch(0.63 0.27 345 / 0.25), 0 0 0 1px
+      oklch(0.24 0.08 280 / 0.4);
+  }
+
+  /* Smooth transitions */
+  .transition-luxury {
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+  .transition-smooth {
+    transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  /* Premium card effects */
+  .card-luxury {
+    @apply glass rounded-card border border-border transition-luxury;
+  }
+  .card-hover {
+    @apply hover:shadow-luxury-lg transition-luxury;
   }
 }

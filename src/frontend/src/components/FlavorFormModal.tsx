@@ -56,8 +56,9 @@ export default function FlavorFormModal({
   const [form, setForm] = useState<IceCreamFlavorInput>(EMPTY_FORM);
   const [errors, setErrors] = useState<Record<string, string>>({});
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: only sync form when dialog opens, not on every flavor prop change
+  // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally only runs when `open` changes
   useEffect(() => {
+    // eslint-disable-line react-hooks/exhaustive-deps
     if (!open) return;
     if (flavor) {
       setForm({

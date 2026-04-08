@@ -25,7 +25,7 @@ export default function Navbar() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
-  // biome-ignore lint/correctness/useExhaustiveDependencies: location.pathname is the reactive value we want
+  // biome-ignore lint/correctness/useExhaustiveDependencies: location.pathname is the reactive value
   useEffect(() => {
     setIsOpen(false);
   }, [location.pathname]);
@@ -36,25 +36,32 @@ export default function Navbar() {
     <>
       <header
         className={cn(
-          "sticky top-0 z-50 w-full transition-all duration-300",
+          "sticky top-0 z-50 w-full transition-all duration-500",
           scrolled
-            ? "bg-white/95 backdrop-blur-md shadow-candy"
-            : "bg-cream/90 backdrop-blur-sm",
+            ? "bg-[oklch(0.10_0.07_275/0.97)] backdrop-blur-xl shadow-[0_4px_30px_oklch(0.65_0.29_310/0.15),0_1px_0_oklch(0.65_0.29_310/0.2)]"
+            : "bg-[oklch(0.12_0.08_275/0.85)] backdrop-blur-md border-b border-[oklch(0.65_0.29_310/0.15)]",
         )}
       >
         <nav className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
           {/* Logo */}
           <Link
             to="/"
-            className="flex items-center gap-2 group"
+            className="flex items-center gap-3 group"
             data-ocid="nav.link"
           >
-            <span className="text-3xl group-hover:animate-float">🍦</span>
+            <div className="relative">
+              <div className="absolute inset-0 rounded-full opacity-0 group-hover:opacity-100 transition-all duration-300 blur-md bg-[oklch(0.65_0.29_310/0.5)]" />
+              <img
+                src="/assets/logo.png"
+                alt="Mother of Ice-cream logo"
+                className="relative h-11 w-11 object-contain group-hover:scale-110 transition-transform duration-300 drop-shadow-[0_0_8px_oklch(0.65_0.29_310/0.6)]"
+              />
+            </div>
             <span
-              className="text-xl font-extrabold tracking-tight"
+              className="hidden sm:inline text-xl font-extrabold tracking-tight font-display"
               style={{
                 background:
-                  "linear-gradient(135deg, oklch(0.64 0.22 355), oklch(0.82 0.13 185))",
+                  "linear-gradient(135deg, oklch(0.65 0.29 310), oklch(0.84 0.18 85))",
                 WebkitBackgroundClip: "text",
                 WebkitTextFillColor: "transparent",
                 backgroundClip: "text",
@@ -72,30 +79,47 @@ export default function Navbar() {
                 to={link.href}
                 data-ocid="nav.link"
                 className={cn(
-                  "px-4 py-2 rounded-pill text-sm font-bold transition-all duration-200",
+                  "relative px-4 py-2 rounded-lg text-sm font-semibold transition-all duration-200 group overflow-hidden",
                   pathname === link.href
-                    ? "text-primary bg-primary/10"
-                    : "text-foreground/70 hover:text-primary hover:bg-primary/[0.08]",
+                    ? "text-cream"
+                    : "text-cream/60 hover:text-cream",
                 )}
               >
-                {link.label}
+                {/* Active/hover underline */}
+                <span
+                  className={cn(
+                    "absolute bottom-0 left-1/2 -translate-x-1/2 h-[2px] rounded-full transition-all duration-300",
+                    "bg-gradient-to-r from-[oklch(0.65_0.29_310)] to-[oklch(0.63_0.27_345)]",
+                    pathname === link.href ? "w-4/5" : "w-0 group-hover:w-4/5",
+                  )}
+                />
+                {/* Hover bg glow */}
+                <span
+                  className={cn(
+                    "absolute inset-0 rounded-lg transition-all duration-200",
+                    pathname === link.href
+                      ? "bg-[oklch(0.65_0.29_310/0.12)]"
+                      : "group-hover:bg-[oklch(0.65_0.29_310/0.08)]",
+                  )}
+                />
+                <span className="relative">{link.label}</span>
               </Link>
             ))}
           </div>
 
-          {/* Right side: Cart + Admin + Order Now */}
+          {/* Right side */}
           <div className="hidden md:flex items-center gap-3">
-            {/* Cart icon */}
+            {/* Cart */}
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
-              className="relative p-2 rounded-full text-foreground/70 hover:text-primary hover:bg-primary/[0.08] transition-all duration-200"
+              className="relative p-2.5 rounded-full text-cream/70 hover:text-cream transition-all duration-200 hover:bg-[oklch(0.65_0.29_310/0.12)] group"
               aria-label="Open cart"
               data-ocid="nav.toggle"
             >
-              <ShoppingCart className="w-5 h-5" />
+              <ShoppingCart className="w-5 h-5 transition-transform group-hover:scale-110" />
               {totalItems > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full gradient-pink text-white text-[10px] font-extrabold flex items-center justify-center px-1 shadow-candy">
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full text-white text-[10px] font-extrabold flex items-center justify-center px-1 animate-[glow-pulse_2s_ease-in-out_infinite] bg-gradient-to-br from-[oklch(0.65_0.29_310)] to-[oklch(0.63_0.27_345)] shadow-[0_0_10px_oklch(0.65_0.29_310/0.7)]">
                   {totalItems}
                 </span>
               )}
@@ -104,16 +128,17 @@ export default function Navbar() {
             <Link
               to="/admin"
               data-ocid="nav.link"
-              className="text-xs font-semibold text-muted-foreground hover:text-primary transition-colors"
+              className="text-xs font-semibold text-cream/40 hover:text-cream/70 transition-colors"
             >
               Admin
             </Link>
+
             <Button
               asChild
-              className="rounded-pill gradient-pink border-0 text-white font-bold px-6 shadow-candy hover:shadow-candy-lg hover:scale-105 transition-all duration-200"
+              className="rounded-pill border-0 text-cream font-bold px-6 bg-gradient-to-r from-[oklch(0.65_0.29_310)] to-[oklch(0.63_0.27_345)] hover:shadow-[0_0_20px_oklch(0.65_0.29_310/0.5),0_0_40px_oklch(0.65_0.29_310/0.2)] hover:scale-105 transition-all duration-300"
             >
               <Link to="/menu" data-ocid="nav.primary_button">
-                Order Now
+                Order Now ✨
               </Link>
             </Button>
           </div>
@@ -123,20 +148,20 @@ export default function Navbar() {
             <button
               type="button"
               onClick={() => setDrawerOpen(true)}
-              className="relative p-2 rounded-full text-foreground/70 hover:text-primary transition-colors"
+              className="relative p-2 rounded-full text-cream/70 hover:text-cream transition-colors"
               aria-label="Open cart"
               data-ocid="nav.toggle"
             >
               <ShoppingCart className="w-5 h-5" />
               {totalItems > 0 && (
-                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full gradient-pink text-white text-[10px] font-extrabold flex items-center justify-center px-1 shadow-candy">
+                <span className="absolute -top-0.5 -right-0.5 min-w-[18px] h-[18px] rounded-full bg-gradient-to-br from-[oklch(0.65_0.29_310)] to-[oklch(0.63_0.27_345)] text-white text-[10px] font-extrabold flex items-center justify-center px-1 shadow-[0_0_10px_oklch(0.65_0.29_310/0.7)]">
                   {totalItems}
                 </span>
               )}
             </button>
             <button
               type="button"
-              className="p-2 rounded-lg text-foreground/70 hover:text-primary transition-colors"
+              className="p-2 rounded-lg text-cream/70 hover:text-cream transition-colors"
               onClick={() => setIsOpen(!isOpen)}
               aria-label="Toggle menu"
               data-ocid="nav.toggle"
@@ -148,17 +173,17 @@ export default function Navbar() {
 
         {/* Mobile menu */}
         {isOpen && (
-          <div className="md:hidden border-t border-border bg-white/98 backdrop-blur-md px-6 py-4 flex flex-col gap-2">
+          <div className="md:hidden border-t border-[oklch(0.65_0.29_310/0.2)] bg-[oklch(0.10_0.07_275/0.97)] backdrop-blur-xl px-6 py-5 flex flex-col gap-1.5 shadow-[0_8px_32px_oklch(0.65_0.29_310/0.1)]">
             {NAV_LINKS.map((link) => (
               <Link
                 key={link.href}
                 to={link.href}
                 data-ocid="nav.link"
                 className={cn(
-                  "py-3 px-4 rounded-lg font-bold text-sm transition-all",
+                  "py-3 px-4 rounded-xl font-semibold text-sm transition-all duration-200 border",
                   pathname === link.href
-                    ? "text-primary bg-primary/10"
-                    : "text-foreground/70 hover:text-primary hover:bg-primary/[0.08]",
+                    ? "text-cream bg-[oklch(0.65_0.29_310/0.15)] border-[oklch(0.65_0.29_310/0.4)] shadow-[inset_0_0_20px_oklch(0.65_0.29_310/0.05)]"
+                    : "text-cream/60 border-transparent hover:text-cream hover:bg-[oklch(0.65_0.29_310/0.08)] hover:border-[oklch(0.65_0.29_310/0.2)]",
                 )}
               >
                 {link.label}
@@ -167,23 +192,22 @@ export default function Navbar() {
             <Link
               to="/admin"
               data-ocid="nav.link"
-              className="py-3 px-4 rounded-lg font-semibold text-xs text-muted-foreground hover:text-primary transition-all"
+              className="py-2.5 px-4 rounded-xl font-semibold text-xs text-cream/30 hover:text-cream/60 transition-all border border-transparent"
             >
               Admin
             </Link>
             <Button
               asChild
-              className="mt-2 rounded-pill gradient-pink border-0 text-white font-bold shadow-candy"
+              className="mt-3 rounded-pill border-0 text-cream font-bold bg-gradient-to-r from-[oklch(0.65_0.29_310)] to-[oklch(0.63_0.27_345)] shadow-[0_0_20px_oklch(0.65_0.29_310/0.3)] hover:shadow-[0_0_30px_oklch(0.65_0.29_310/0.5)]"
             >
               <Link to="/menu" data-ocid="nav.primary_button">
-                Order Now
+                Order Now ✨
               </Link>
             </Button>
           </div>
         )}
       </header>
 
-      {/* Cart Drawer (outside header for proper stacking) */}
       <CartDrawer />
     </>
   );

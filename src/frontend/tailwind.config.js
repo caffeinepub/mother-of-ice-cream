@@ -16,8 +16,8 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Nunito", "sans-serif"],
-        display: ["Nunito", "sans-serif"],
+        sans: ["Satoshi", "sans-serif"],
+        display: ["Space Grotesk", "sans-serif"],
       },
       colors: {
         border: "oklch(var(--border))",
@@ -81,6 +81,11 @@ export default {
           DEFAULT: "oklch(var(--aqua))",
           light: "oklch(var(--aqua-light))",
         },
+        fuchsia: {
+          DEFAULT: "oklch(var(--fuchsia))",
+          light: "oklch(var(--fuchsia-light))",
+        },
+        gold: "oklch(var(--gold))",
         cream: "oklch(var(--cream))",
       },
       borderRadius: {
@@ -92,9 +97,12 @@ export default {
       },
       boxShadow: {
         xs: "0 1px 2px 0 rgba(0,0,0,0.05)",
-        candy: "0 10px 30px oklch(0.64 0.22 355 / 0.14)",
-        "candy-lg": "0 20px 50px oklch(0.64 0.22 355 / 0.18)",
-        "candy-aqua": "0 10px 30px oklch(0.82 0.13 185 / 0.2)",
+        luxury: "0 10px 30px oklch(0.63 0.27 345 / 0.15), 0 0 0 1px oklch(0.24 0.08 280 / 0.2)",
+        "luxury-lg": "0 20px 50px oklch(0.63 0.27 345 / 0.2), 0 0 0 1px oklch(0.24 0.08 280 / 0.3)",
+        "luxury-xl": "0 40px 80px oklch(0.63 0.27 345 / 0.25), 0 0 0 1px oklch(0.24 0.08 280 / 0.4)",
+        "glow-pink": "0 0 20px oklch(0.63 0.27 345 / 0.4), 0 0 40px oklch(0.63 0.27 345 / 0.15)",
+        "glow-fuchsia": "0 0 20px oklch(0.65 0.29 310 / 0.4), 0 0 40px oklch(0.65 0.29 310 / 0.15)",
+        "glow-gold": "0 0 16px oklch(0.84 0.18 85 / 0.3), 0 0 32px oklch(0.84 0.18 85 / 0.1)",
       },
       keyframes: {
         "accordion-down": {
@@ -114,6 +122,18 @@ export default {
           from: { transform: "rotate(0deg)" },
           to: { transform: "rotate(360deg)" },
         },
+        "glow-pulse": {
+          "0%, 100%": { opacity: "1" },
+          "50%": { opacity: "0.7" },
+        },
+        "fade-in-up": {
+          from: { opacity: "0", transform: "translateY(20px)" },
+          to: { opacity: "1", transform: "translateY(0)" },
+        },
+        shimmer: {
+          "0%": { backgroundPosition: "-1000px 0" },
+          "100%": { backgroundPosition: "1000px 0" },
+        },
       },
       animation: {
         "accordion-down": "accordion-down 0.2s ease-out",
@@ -122,6 +142,9 @@ export default {
         "float-delayed": "float 5s ease-in-out 1.5s infinite",
         "float-slow": "float 7s ease-in-out 0.5s infinite",
         "spin-slow": "spin-slow 12s linear infinite",
+        "glow-pulse": "glow-pulse 2s ease-in-out infinite",
+        "fade-in-up": "fade-in-up 0.6s ease-out",
+        shimmer: "shimmer 2s infinite",
       },
     },
   },
